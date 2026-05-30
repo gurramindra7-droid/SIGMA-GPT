@@ -13,6 +13,13 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    // ✅ Gmail check on frontend
+    if (!form.email.endsWith("@gmail.com")) {
+      setError("Only Gmail accounts are allowed (@gmail.com)");
+      return;
+    }
+
     setLoading(true);
     try {
       await register(form.username, form.email, form.password);
@@ -50,14 +57,16 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
+            <label className="block text-sm text-gray-400 mb-1">
+              Email <span className="text-gray-500">(Gmail only)</span>
+            </label>
             <input
               type="email"
               required
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-              placeholder="you@example.com"
+              placeholder="you@gmail.com"
             />
           </div>
 

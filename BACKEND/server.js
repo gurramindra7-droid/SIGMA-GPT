@@ -10,7 +10,6 @@ dotenv.config();
 
 const app = express();
 
-// ✅ FIXED: correct Vercel URL in CORS
 app.use(
   cors({
     origin: [
@@ -34,6 +33,26 @@ mongoose
   .catch((err) => console.log(err));
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+// ✅ Smart title generator using Groq
+const generateChatTitle = async (message) => {
+  try {
+    const res = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "user",
+          content: `Generate a very short, catchy 2-4 word chat title for this message. No quotes, no punctuation, just the title words. Example: "DSA Recursion Errors", "React Hook Issues", "Python File Parsing". Message: "${message}"`,
+        },
+      ],
+      max_tokens: 20,
+    });
+    const title = res.choices[0]?.message?.content?.trim();
+    return title || message.slice(0, 40);
+  } catch {
+    return message.slice(0, 40);
+  }
+};
 
 const userSchema = new mongoose.Schema({
   username: String,
@@ -61,11 +80,9 @@ const authMiddleware = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: "No token provided" });
-
     const token = authHeader.startsWith("Bearer ")
       ? authHeader.slice(7)
       : authHeader;
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
@@ -77,19 +94,29 @@ const authMiddleware = (req, res, next) => {
 app.post("/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
+
     if (!username || !email || !password) {
       return res.status(400).json({ error: "All fields are required" });
     }
+
+    // ✅ Gmail only check
+    if (!email.endsWith("@gmail.com")) {
+      return res.status(400).json({ error: "Only Gmail accounts are allowed" });
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ username, email, password: hashedPassword });
+
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET
     );
+
     res.json({
       message: "Registration successful",
       token,
@@ -104,17 +131,27 @@ app.post("/register", async (req, res) => {
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password required" });
     }
+
+    // ✅ Gmail only check on login too
+    if (!email.endsWith("@gmail.com")) {
+      return res.status(400).json({ error: "Only Gmail accounts are allowed" });
+    }
+
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ error: "User not found" });
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: "Invalid password" });
+
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET
     );
+
     res.json({
       token,
       user: { id: user._id, username: user.username, email: user.email },
@@ -210,9 +247,11 @@ app.post("/chat", authMiddleware, async (req, res) => {
       });
       savedChatId = chatId;
     } else {
+      // ✅ Smart AI-generated title instead of raw message slice
+      const title = await generateChatTitle(message);
       const newChat = await Chat.create({
         userId: req.user.id,
-        title: message.slice(0, 40),
+        title,
         messages: [
           { role: "user", content: message },
           { role: "assistant", content: fullReply },
