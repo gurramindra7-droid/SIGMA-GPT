@@ -10,8 +10,24 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+// ✅ FIX: explicit CORS — replace with your actual Vercel frontend URL
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://your-frontend.vercel.app", // 👈 replace this
+    ],
+    methods: ["GET", "POST", "DELETE", "PUT"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 app.use(express.json());
+
+// ✅ Root route so "Cannot GET /" doesn't show on Render
+app.get("/", (req, res) => {
+  res.json({ message: "SIGMA GPT Backend is running ✅" });
+});
 
 /* =========================
    MONGODB CONNECTION
@@ -64,7 +80,6 @@ const Chat = mongoose.model("Chat", chatSchema);
 
 /* =========================
    AUTH MIDDLEWARE
-   FIX: reads "Bearer <token>" format
 ========================= */
 
 const authMiddleware = (req, res, next) => {
@@ -75,7 +90,6 @@ const authMiddleware = (req, res, next) => {
       return res.status(401).json({ error: "No token provided" });
     }
 
-    // Support both "Bearer <token>" and raw token
     const token = authHeader.startsWith("Bearer ")
       ? authHeader.slice(7)
       : authHeader;
@@ -107,9 +121,12 @@ app.post("/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({ username, email, password: hashedPassword });
+    const user = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+    });
 
-    // FIX: use JWT_SECRET from env
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET
@@ -148,7 +165,6 @@ app.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Invalid password" });
     }
 
-    // FIX: use JWT_SECRET from env
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET
@@ -171,7 +187,7 @@ app.post("/login", async (req, res) => {
 app.get("/chats", authMiddleware, async (req, res) => {
   try {
     const chats = await Chat.find({ userId: req.user.id })
-      .select("title createdAt")   // only send title, not all messages
+      .select("title createdAt")
       .sort({ createdAt: -1 });
 
     res.json(chats);
@@ -182,7 +198,7 @@ app.get("/chats", authMiddleware, async (req, res) => {
 });
 
 /* =========================
-   GET SINGLE CHAT (load messages)
+   GET SINGLE CHAT
 ========================= */
 
 app.get("/chats/:id", authMiddleware, async (req, res) => {
@@ -216,9 +232,7 @@ app.delete("/chats/:id", authMiddleware, async (req, res) => {
 });
 
 /* =========================
-   CHAT API
-   FIX 1: sends full conversation history to Groq (memory)
-   FIX 2: returns chatId so frontend can track active chat
+   CHAT API (with streaming)
 ========================= */
 
 app.post("/chat", authMiddleware, async (req, res) => {
@@ -229,14 +243,12 @@ app.post("/chat", authMiddleware, async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
     }
 
-    // Build conversation history for Groq
     let conversationHistory = [];
     let chat = null;
 
     if (chatId) {
       chat = await Chat.findOne({ _id: chatId, userId: req.user.id });
       if (chat) {
-        // Send previous messages so Groq has memory
         conversationHistory = chat.messages.map((m) => ({
           role: m.role,
           content: m.content,
@@ -244,14 +256,11 @@ app.post("/chat", authMiddleware, async (req, res) => {
       }
     }
 
-    // Add current user message
     conversationHistory.push({ role: "user", content: message });
 
-    // STREAM HEADERS
     res.setHeader("Content-Type", "text/plain");
     res.setHeader("Transfer-Encoding", "chunked");
 
-    // GROQ with full history
     const completion = await groq.chat.completions.create({
       messages: conversationHistory,
       model: "llama-3.3-70b-versatile",
@@ -266,12 +275,9 @@ app.post("/chat", authMiddleware, async (req, res) => {
       res.write(text);
     }
 
-    // FIX: send chatId in a special header before ending
-    // We'll save first, then the frontend can read the header
     let savedChatId;
 
     if (chatId && chat) {
-      // Update existing chat
       await Chat.findByIdAndUpdate(chatId, {
         $push: {
           messages: {
@@ -284,7 +290,6 @@ app.post("/chat", authMiddleware, async (req, res) => {
       });
       savedChatId = chatId;
     } else {
-      // Create new chat
       const newChat = await Chat.create({
         userId: req.user.id,
         title: message.slice(0, 40),
@@ -296,7 +301,6 @@ app.post("/chat", authMiddleware, async (req, res) => {
       savedChatId = newChat._id.toString();
     }
 
-    // Send chatId as a special trailing marker the frontend can parse
     res.write(`\n__CHAT_ID__:${savedChatId}`);
     res.end();
   } catch (error) {

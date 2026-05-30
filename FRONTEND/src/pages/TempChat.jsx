@@ -9,6 +9,9 @@ import { useFileUpload } from "../hooks/useFileUpload";
 import api from "../api";
 import { FiSend, FiMic, FiMicOff, FiPaperclip, FiMenu, FiX } from "react-icons/fi";
 
+// ✅ THE ONLY CHANGE — use env variable instead of hardcoded localhost
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 export default function Chat() {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
@@ -21,10 +24,8 @@ export default function Chat() {
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // File upload hook
   const { uploadedFile, extracting, error: fileError, handleFile, clearFile } = useFileUpload();
 
-  // Voice input hook
   const { listening, supported: voiceSupported, startListening, stopListening } =
     useVoiceInput((transcript) => {
       setInput((prev) => (prev ? prev + " " + transcript : transcript));
@@ -57,7 +58,7 @@ export default function Chat() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) handleFile(file);
-    e.target.value = ""; // reset so same file can be re-uploaded
+    e.target.value = "";
   };
 
   const sendMessage = async () => {
@@ -65,7 +66,6 @@ export default function Chat() {
 
     let finalMessage = input.trim();
 
-    // Attach file content if uploaded
     if (uploadedFile) {
       const fileContext = uploadedFile.type === "pdf"
         ? `I've uploaded a PDF called "${uploadedFile.name}". Here is the extracted text:\n\n${uploadedFile.content}`
@@ -83,12 +83,12 @@ export default function Chat() {
     setInput("");
     setLoading(true);
 
-    // Add empty assistant placeholder for streaming
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/chat", {
+      // ✅ Uses API_URL variable — works both locally and in production
+      const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -146,7 +146,6 @@ export default function Chat() {
 
   return (
     <div className="flex h-screen bg-gray-950 text-white overflow-hidden">
-      {/* Sidebar */}
       <div
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -167,9 +166,7 @@ export default function Chat() {
         />
       )}
 
-      {/* Main */}
       <div className="flex flex-col flex-1 min-w-0">
-        {/* Top bar */}
         <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-950">
           <button
             onClick={() => setSidebarOpen((s) => !s)}
@@ -182,7 +179,6 @@ export default function Chat() {
           </h2>
         </header>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
@@ -215,7 +211,6 @@ export default function Chat() {
           )}
         </div>
 
-        {/* File preview */}
         <div className="px-4 max-w-3xl mx-auto w-full">
           <FilePreview
             file={uploadedFile}
@@ -225,11 +220,9 @@ export default function Chat() {
           />
         </div>
 
-        {/* Input area */}
         <div className="px-4 pb-4 pt-2 border-t border-gray-800">
           <div className="max-w-3xl mx-auto">
             <div className="flex items-end gap-2 bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3">
-              {/* File upload */}
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={extracting}
@@ -246,7 +239,6 @@ export default function Chat() {
                 onChange={handleFileChange}
               />
 
-              {/* Text input */}
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -262,7 +254,6 @@ export default function Chat() {
                 style={{ maxHeight: "160px" }}
               />
 
-              {/* Voice */}
               {voiceSupported && (
                 <button
                   onClick={listening ? stopListening : startListening}
@@ -275,7 +266,6 @@ export default function Chat() {
                 </button>
               )}
 
-              {/* Send */}
               <button
                 onClick={sendMessage}
                 disabled={loading || extracting || (!input.trim() && !uploadedFile)}
