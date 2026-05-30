@@ -10,12 +10,12 @@ dotenv.config();
 
 const app = express();
 
-// ✅ FIX: explicit CORS — replace with your actual Vercel frontend URL
+// ✅ FIXED: correct Vercel URL in CORS
 app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://your-frontend.vercel.app", // 👈 replace this
+      "https://sigma-gpt-zeta.vercel.app",
     ],
     methods: ["GET", "POST", "DELETE", "PUT"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -24,43 +24,23 @@ app.use(
 
 app.use(express.json());
 
-// ✅ Root route so "Cannot GET /" doesn't show on Render
 app.get("/", (req, res) => {
   res.json({ message: "SIGMA GPT Backend is running ✅" });
 });
-
-/* =========================
-   MONGODB CONNECTION
-========================= */
 
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.log(err));
 
-/* =========================
-   GROQ
-========================= */
-
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
-/* =========================
-   USER SCHEMA
-========================= */
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const userSchema = new mongoose.Schema({
   username: String,
   email: { type: String, unique: true },
   password: String,
 });
-
 const User = mongoose.model("User", userSchema);
-
-/* =========================
-   CHAT SCHEMA
-========================= */
 
 const chatSchema = new mongoose.Schema(
   {
@@ -75,20 +55,12 @@ const chatSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
 const Chat = mongoose.model("Chat", chatSchema);
-
-/* =========================
-   AUTH MIDDLEWARE
-========================= */
 
 const authMiddleware = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-      return res.status(401).json({ error: "No token provided" });
-    }
+    if (!authHeader) return res.status(401).json({ error: "No token provided" });
 
     const token = authHeader.startsWith("Bearer ")
       ? authHeader.slice(7)
@@ -102,36 +74,22 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-/* =========================
-   REGISTER
-========================= */
-
 app.post("/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
-
     if (!username || !email || !password) {
       return res.status(400).json({ error: "All fields are required" });
     }
-
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
-
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      username,
-      email,
-      password: hashedPassword,
-    });
-
+    const user = await User.create({ username, email, password: hashedPassword });
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET
     );
-
     res.json({
       message: "Registration successful",
       token,
@@ -143,33 +101,20 @@ app.post("/register", async (req, res) => {
   }
 });
 
-/* =========================
-   LOGIN
-========================= */
-
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password required" });
     }
-
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ error: "User not found" });
-    }
-
+    if (!user) return res.status(400).json({ error: "User not found" });
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ error: "Invalid password" });
-    }
-
+    if (!isMatch) return res.status(400).json({ error: "Invalid password" });
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET
     );
-
     res.json({
       token,
       user: { id: user._id, username: user.username, email: user.email },
@@ -180,16 +125,11 @@ app.post("/login", async (req, res) => {
   }
 });
 
-/* =========================
-   GET ALL CHATS (sidebar)
-========================= */
-
 app.get("/chats", authMiddleware, async (req, res) => {
   try {
     const chats = await Chat.find({ userId: req.user.id })
       .select("title createdAt")
       .sort({ createdAt: -1 });
-
     res.json(chats);
   } catch (error) {
     console.log(error);
@@ -197,29 +137,16 @@ app.get("/chats", authMiddleware, async (req, res) => {
   }
 });
 
-/* =========================
-   GET SINGLE CHAT
-========================= */
-
 app.get("/chats/:id", authMiddleware, async (req, res) => {
   try {
-    const chat = await Chat.findOne({
-      _id: req.params.id,
-      userId: req.user.id,
-    });
-
+    const chat = await Chat.findOne({ _id: req.params.id, userId: req.user.id });
     if (!chat) return res.status(404).json({ error: "Chat not found" });
-
     res.json(chat);
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: "Failed to fetch chat" });
   }
 });
-
-/* =========================
-   DELETE CHAT
-========================= */
 
 app.delete("/chats/:id", authMiddleware, async (req, res) => {
   try {
@@ -231,17 +158,10 @@ app.delete("/chats/:id", authMiddleware, async (req, res) => {
   }
 });
 
-/* =========================
-   CHAT API (with streaming)
-========================= */
-
 app.post("/chat", authMiddleware, async (req, res) => {
   try {
     const { message, chatId } = req.body;
-
-    if (!message) {
-      return res.status(400).json({ error: "Message is required" });
-    }
+    if (!message) return res.status(400).json({ error: "Message is required" });
 
     let conversationHistory = [];
     let chat = null;
@@ -309,12 +229,5 @@ app.post("/chat", authMiddleware, async (req, res) => {
   }
 });
 
-/* =========================
-   SERVER
-========================= */
-
 const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
