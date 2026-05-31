@@ -6,5 +6,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     chunkSizeWarningLimit: 1600,
+  },
+  preview: {
+    port: 3000,
   }
 })
