@@ -1,30 +1,63 @@
-import axios from "axios";
+const BASE_URL = import.meta.env.VITE_API_URL || "https://sigma-gpt-backend-obn8.onrender.com";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
+export const registerUser = async (username, email, password) => {
+  const res = await fetch(`${BASE_URL}/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Registration failed");
+  return data;
+};
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+export const loginUser = async (email, password) => {
+  const res = await fetch(`${BASE_URL}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Login failed");
+  return data;
+};
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+export const sendMessage = async (message, chatId, token) => {
+  const res = await fetch(`${BASE_URL}/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ message, chatId }),
+  });
+  return res;
+};
 
-  return config;
-});
+export const getChats = async (token) => {
+  const res = await fetch(`${BASE_URL}/chats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to fetch chats");
+  return data;
+};
 
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
-    }
+export const getChatById = async (id, token) => {
+  const res = await fetch(`${BASE_URL}/chats/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to fetch chat");
+  return data;
+};
 
-    return Promise.reject(error);
-  }
-);
-
-export default api;
+export const deleteChat = async (id, token) => {
+  const res = await fetch(`${BASE_URL}/chats/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to delete chat");
+  return data;
+};
