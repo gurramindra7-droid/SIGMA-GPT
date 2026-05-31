@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "https://sigma-gpt-backend-obn8.onrender.com";
+const BASE_URL = "https://sigma-gpt-backend-obn8.onrender.com";
 
 export const registerUser = async (username, email, password) => {
   const res = await fetch(`${BASE_URL}/register`, {
