@@ -1,8 +1,11 @@
-const BASE_URL = "https://sigma-gpt-backend-obn8.onrender.com";
+// src/api.js
+// Uses relative URL in production (Vercel serves both frontend + backend)
+// Uses proxy in local dev (configured in vite.config.js)
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const api = {
   register: async (username, email, password) => {
-    const res = await fetch(`${BASE_URL}/register`, {
+    const res = await fetch(`${BASE_URL}/api/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, email, password }),
@@ -13,7 +16,7 @@ const api = {
   },
 
   login: async (email, password) => {
-    const res = await fetch(`${BASE_URL}/login`, {
+    const res = await fetch(`${BASE_URL}/api/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -24,7 +27,7 @@ const api = {
   },
 
   sendMessage: async (message, chatId, token) => {
-    const res = await fetch(`${BASE_URL}/chat`, {
+    const res = await fetch(`${BASE_URL}/api/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -36,7 +39,7 @@ const api = {
   },
 
   getChats: async (token) => {
-    const res = await fetch(`${BASE_URL}/chats`, {
+    const res = await fetch(`${BASE_URL}/api/chats`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -45,7 +48,7 @@ const api = {
   },
 
   getChatById: async (id, token) => {
-    const res = await fetch(`${BASE_URL}/chats/${id}`, {
+    const res = await fetch(`${BASE_URL}/api/chats/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -54,7 +57,7 @@ const api = {
   },
 
   deleteChat: async (id, token) => {
-    const res = await fetch(`${BASE_URL}/chats/${id}`, {
+    const res = await fetch(`${BASE_URL}/api/chats/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });

@@ -7,5 +7,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     chunkSizeWarningLimit: 1600,
-  }
+  },
+  server: {
+    // Proxy /api calls to your local backend during development
+    // This means fetch('/api/login') → http://localhost:5000/api/login
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
 })
