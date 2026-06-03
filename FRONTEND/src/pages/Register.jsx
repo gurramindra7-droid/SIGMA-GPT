@@ -1,3 +1,4 @@
+// src/pages/Register.jsx
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -17,7 +18,7 @@ export default function Register() {
     setLoading(true);
     try {
       await register(username, email, password);
-      navigate("/chat");
+      navigate("/");   // ✅ FIXED: was "/chat" which doesn't exist in App.jsx routes
     } catch (err) {
       setError(err.message);
     } finally {

@@ -1,6 +1,6 @@
 // src/api.js
-// Uses relative URL in production (Vercel serves both frontend + backend)
-// Uses proxy in local dev (configured in vite.config.js)
+// BASE_URL is empty string in production = relative URLs (/api/login etc.)
+// Vite proxy in vite.config.js handles routing to localhost:5000 in local dev
 const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const api = {
