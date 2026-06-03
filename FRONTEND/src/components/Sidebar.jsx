@@ -12,8 +12,9 @@ export default function Sidebar({ activeChatId, onSelectChat, onNewChat, refresh
   const fetchChats = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/chats");
-      setChats(res.data);
+      const token = localStorage.getItem("token");
+      const chats = await api.getChats(token);
+      setChats(chats);
     } catch (err) {
       console.error(err);
     } finally {
@@ -27,7 +28,8 @@ export default function Sidebar({ activeChatId, onSelectChat, onNewChat, refresh
 
   const deleteChat = async (e, chatId) => {
     e.stopPropagation();
-    await api.delete(`/chats/${chatId}`);
+    const token = localStorage.getItem("token");
+    await api.deleteChat(chatId, token);
     setChats((prev) => prev.filter((c) => c._id !== chatId));
     if (activeChatId === chatId) onNewChat();
   };

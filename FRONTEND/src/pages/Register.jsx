@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { registerUser } from "../api";
+import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -9,15 +9,14 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const data = await registerUser(username, email, password);
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      await register(username, email, password);
       navigate("/chat");
     } catch (err) {
       setError(err.message);

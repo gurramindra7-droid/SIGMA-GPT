@@ -15,6 +15,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://sigma-gpt-zeta.vercel.app",
+      "https://sigma-gpt-pink.vercel.app",
     ],
     methods: ["GET", "POST", "DELETE", "PUT"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -23,7 +24,8 @@ app.use(
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
+// ✅ Health check
+app.get("/api", (req, res) => {
   res.json({ message: "SIGMA GPT Backend is running ✅" });
 });
 
@@ -54,6 +56,8 @@ const generateChatTitle = async (message) => {
   }
 };
 
+// ─── Schemas & Models ────────────────────────────────────────────────────────
+
 const userSchema = new mongoose.Schema({
   username: String,
   email: { type: String, unique: true },
@@ -76,10 +80,13 @@ const chatSchema = new mongoose.Schema(
 );
 const Chat = mongoose.model("Chat", chatSchema);
 
+// ─── Auth Middleware ──────────────────────────────────────────────────────────
+
 const authMiddleware = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: "No token provided" });
+    if (!authHeader)
+      return res.status(401).json({ error: "No token provided" });
     const token = authHeader.startsWith("Bearer ")
       ? authHeader.slice(7)
       : authHeader;
@@ -91,7 +98,9 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-app.post("/register", async (req, res) => {
+// ─── Auth Routes ─────────────────────────────────────────────────────────────
+
+app.post("/api/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
@@ -99,7 +108,6 @@ app.post("/register", async (req, res) => {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // ✅ Gmail only check
     if (!email.endsWith("@gmail.com")) {
       return res.status(400).json({ error: "Only Gmail accounts are allowed" });
     }
@@ -110,7 +118,11 @@ app.post("/register", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, email, password: hashedPassword });
+    const user = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+    });
 
     const token = jwt.sign(
       { id: user._id, email: user.email },
@@ -128,7 +140,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-app.post("/login", async (req, res) => {
+app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -136,7 +148,6 @@ app.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Email and password required" });
     }
 
-    // ✅ Gmail only check on login too
     if (!email.endsWith("@gmail.com")) {
       return res.status(400).json({ error: "Only Gmail accounts are allowed" });
     }
@@ -162,7 +173,9 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.get("/chats", authMiddleware, async (req, res) => {
+// ─── Chat Routes ──────────────────────────────────────────────────────────────
+
+app.get("/api/chats", authMiddleware, async (req, res) => {
   try {
     const chats = await Chat.find({ userId: req.user.id })
       .select("title createdAt")
@@ -174,9 +187,12 @@ app.get("/chats", authMiddleware, async (req, res) => {
   }
 });
 
-app.get("/chats/:id", authMiddleware, async (req, res) => {
+app.get("/api/chats/:id", authMiddleware, async (req, res) => {
   try {
-    const chat = await Chat.findOne({ _id: req.params.id, userId: req.user.id });
+    const chat = await Chat.findOne({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
     if (!chat) return res.status(404).json({ error: "Chat not found" });
     res.json(chat);
   } catch (error) {
@@ -185,7 +201,7 @@ app.get("/chats/:id", authMiddleware, async (req, res) => {
   }
 });
 
-app.delete("/chats/:id", authMiddleware, async (req, res) => {
+app.delete("/api/chats/:id", authMiddleware, async (req, res) => {
   try {
     await Chat.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     res.json({ message: "Chat deleted" });
@@ -195,7 +211,7 @@ app.delete("/chats/:id", authMiddleware, async (req, res) => {
   }
 });
 
-app.post("/chat", authMiddleware, async (req, res) => {
+app.post("/api/chat", authMiddleware, async (req, res) => {
   try {
     const { message, chatId } = req.body;
     if (!message) return res.status(400).json({ error: "Message is required" });
@@ -247,7 +263,6 @@ app.post("/chat", authMiddleware, async (req, res) => {
       });
       savedChatId = chatId;
     } else {
-      // ✅ Smart AI-generated title instead of raw message slice
       const title = await generateChatTitle(message);
       const newChat = await Chat.create({
         userId: req.user.id,
@@ -268,5 +283,10 @@ app.post("/chat", authMiddleware, async (req, res) => {
   }
 });
 
+// ─── Start Server ─────────────────────────────────────────────────────────────
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// ✅ Required for Vercel serverless deployment
+export default app;

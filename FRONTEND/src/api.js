@@ -67,8 +67,6 @@ const api = {
 export default api;
 
 // Named exports for convenience
-export const registerUser = api.register;
-export const loginUser = api.login;
 export const sendMessage = api.sendMessage;
 export const getChats = api.getChats;
 export const getChatById = api.getChatById;

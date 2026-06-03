@@ -9,8 +9,8 @@ import { useFileUpload } from "../hooks/useFileUpload";
 import api from "../api";
 import { FiSend, FiMic, FiMicOff, FiPaperclip, FiMenu, FiX } from "react-icons/fi";
 
-// ✅ THE ONLY CHANGE — use env variable instead of hardcoded localhost
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// Backend URL: uses env var on Vercel, falls back to Render for safety
+const API_URL = import.meta.env.VITE_API_URL || "https://sigma-gpt-backend-obn8.onrender.com";
 
 export default function Chat() {
   const { user } = useAuth();
@@ -44,8 +44,9 @@ export default function Chat() {
 
   const loadChat = async (chatId) => {
     setActiveChatId(chatId);
-    const res = await api.get(`/chats/${chatId}`);
-    setMessages(res.data.messages);
+    const token = localStorage.getItem("token");
+    const chat = await api.getChatById(chatId, token);
+    setMessages(chat.messages);
   };
 
   const handleNewChat = () => {
