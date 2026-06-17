@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import API_BASE_URL from "../config/api";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
@@ -19,7 +20,28 @@ export default function Chat({ username, onLogout }) {
   const [activeChatId, setActiveChatId] = useState(chats[0].id);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [backendStatus, setBackendStatus] = useState("connecting");
   const bottomRef = useRef(null);
+
+  // Health check to handle Render cold start
+  useEffect(() => {
+    let cancelled = false;
+    const check = () => {
+      fetch(`${API_BASE_URL}/health`)
+        .then((res) => {
+          if (!cancelled) setBackendStatus(res.ok ? "ready" : "error");
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setBackendStatus("connecting");
+            // Retry after 3s — Render cold start can take 10-30s
+            setTimeout(check, 3000);
+          }
+        });
+    };
+    check();
+    return () => { cancelled = true; };
+  }, []);
 
   const activeChat = chats.find((c) => c.id === activeChatId);
 
@@ -134,6 +156,26 @@ export default function Chat({ username, onLogout }) {
       if (activeChatId === id) setActiveChatId(remaining[0].id);
     }
   };
+
+  // Show cold-start loading screen while backend wakes up
+  if (backendStatus === "connecting") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-white">
+        <div className="text-center">
+          <div className="text-6xl mb-6 animate-pulse">⚡</div>
+          <h2 className="text-2xl font-semibold mb-2">Waking up SIGMA-GPT...</h2>
+          <p className="text-gray-400 text-sm">
+            The backend is starting up. This may take a moment.
+          </p>
+          <div className="mt-8 flex justify-center">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce mr-1" style={{ animationDelay: "0ms" }} />
+            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce mr-1" style={{ animationDelay: "150ms" }} />
+            <div className="w-2 h-2 bg-violet-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-950 text-white overflow-hidden">

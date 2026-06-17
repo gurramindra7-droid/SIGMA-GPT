@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/auth.css";
+import api from "../api";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -91,11 +92,16 @@ export default function Register() {
     }
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    console.log("Registration:", { fullName: form.fullName, email: form.email });
-    localStorage.setItem("sigma_username", form.fullName);
-    setLoading(false);
-    navigate("/chat");
+    try {
+      const data = await api.register(form.fullName, form.email, form.password);
+      localStorage.setItem("sigma_token", data.token);
+      localStorage.setItem("sigma_username", data.user.username);
+      navigate("/chat");
+    } catch (err) {
+      setBannerError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

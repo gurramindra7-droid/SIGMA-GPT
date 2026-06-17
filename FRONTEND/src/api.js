@@ -1,11 +1,24 @@
 // src/api.js
-// BASE_URL is empty string in production = relative URLs (/api/login etc.)
-// Vite proxy in vite.config.js handles routing to localhost:5000 in local dev
-const BASE_URL = import.meta.env.VITE_API_URL || "";
+import API_BASE_URL from "./config/api";
+
+// Retry logic for Render cold starts (free tier sleeps after 15 min)
+export async function fetchWithRetry(url, options = {}, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok) return res;
+      // If server error (5xx), retry; otherwise throw immediately
+      if (res.status < 500) return res;
+    } catch (err) {
+      if (i === retries - 1) throw err;
+    }
+    await new Promise((r) => setTimeout(r, 2000)); // wait 2s between retries
+  }
+}
 
 const api = {
   register: async (username, email, password) => {
-    const res = await fetch(`${BASE_URL}/api/register`, {
+    const res = await fetchWithRetry(`${API_BASE_URL}/api/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, email, password }),
@@ -16,7 +29,7 @@ const api = {
   },
 
   login: async (email, password) => {
-    const res = await fetch(`${BASE_URL}/api/login`, {
+    const res = await fetchWithRetry(`${API_BASE_URL}/api/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -27,7 +40,7 @@ const api = {
   },
 
   sendMessage: async (message, chatId, token) => {
-    const res = await fetch(`${BASE_URL}/api/chat`, {
+    const res = await fetchWithRetry(`${API_BASE_URL}/api/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -39,7 +52,7 @@ const api = {
   },
 
   getChats: async (token) => {
-    const res = await fetch(`${BASE_URL}/api/chats`, {
+    const res = await fetchWithRetry(`${API_BASE_URL}/api/chats`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -48,7 +61,7 @@ const api = {
   },
 
   getChatById: async (id, token) => {
-    const res = await fetch(`${BASE_URL}/api/chats/${id}`, {
+    const res = await fetchWithRetry(`${API_BASE_URL}/api/chats/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -57,7 +70,7 @@ const api = {
   },
 
   deleteChat: async (id, token) => {
-    const res = await fetch(`${BASE_URL}/api/chats/${id}`, {
+    const res = await fetchWithRetry(`${API_BASE_URL}/api/chats/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });

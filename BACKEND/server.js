@@ -24,7 +24,11 @@ app.use(
 
 app.use(express.json());
 
-// ✅ Health check
+// ✅ Health check — also used by Render cold-start pings
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 app.get("/api", (req, res) => {
   res.json({ message: "SIGMA GPT Backend is running ✅" });
 });
