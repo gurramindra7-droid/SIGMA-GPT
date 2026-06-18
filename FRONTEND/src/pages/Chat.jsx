@@ -60,18 +60,12 @@ export default function Chat({ username, onLogout }) {
     setLoading(true);
 
     const userMsg = { role: "user", content: text };
+    const assistantMsg = { role: "assistant", content: "" };
 
-    // Add user message
+    // Add user message + empty assistant message (for streaming) in one update
     updateChat(activeChatId, (c) => ({
       ...c,
       title: c.messages.length === 0 ? text.slice(0, 35) : c.title,
-      messages: [...c.messages, userMsg],
-    }));
-
-    // Add empty assistant message for streaming effect
-    const assistantMsg = { role: "assistant", content: "" };
-    updateChat(activeChatId, (c) => ({
-      ...c,
       messages: [...c.messages, userMsg, assistantMsg],
     }));
 
@@ -92,6 +86,13 @@ export default function Chat({ username, onLogout }) {
         }),
       });
 
+      // ✅ Check for API errors (invalid key, rate limit, etc.) before streaming
+      if (!res.ok) {
+        const errBody = await res.text();
+        console.error("Groq API error:", res.status, errBody);
+        throw new Error(`Groq API error ${res.status}: ${errBody.slice(0, 200)}`);
+      }
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let full = "";
@@ -105,7 +106,8 @@ export default function Chat({ username, onLogout }) {
           const json = line.replace("data: ", "");
           if (json === "[DONE]") break;
           try {
-            const delta = JSON.parse(json).choices[0]?.delta?.content || "";
+            const parsed = JSON.parse(json);
+            const delta = parsed.choices[0]?.delta?.content || "";
             full += delta;
             setChats((prev) =>
               prev.map((c) => {
@@ -115,9 +117,13 @@ export default function Chat({ username, onLogout }) {
                 return { ...c, messages: msgs };
               })
             );
-          } catch {}
+          } catch (parseErr) {
+            console.warn("SSE parse warning:", parseErr.message, line.slice(0, 120));
+          }
         }
       }
+
+      console.log("✅ AI response complete —", full.length, "chars received");
     } catch (err) {
       updateChat(activeChatId, (c) => {
         const msgs = [...c.messages];
