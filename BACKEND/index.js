@@ -5,8 +5,18 @@ import mongoose from "mongoose";
 import Groq from "groq-sdk";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config({ path: resolve(__dirname, ".env") });
+
+// ✅ Debug: confirm API key is loaded (show only prefix & length for security)
+console.log("[DEBUG] MONGO_URI:", process.env.MONGO_URI ? "✅ Loaded" : "❌ MISSING");
+console.log("[DEBUG] GROQ_API_KEY:", process.env.GROQ_API_KEY ? `✅ Loaded (prefix: ${process.env.GROQ_API_KEY.slice(0, 8)}..., length: ${process.env.GROQ_API_KEY.length})` : "❌ MISSING");
+console.log("[DEBUG] JWT_SECRET:", process.env.JWT_SECRET ? "✅ Loaded" : "❌ MISSING");
 
 const app = express();
 

@@ -1,10 +1,19 @@
 // src/App.jsx
+import { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import Intro from "./components/Intro";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Chat from "./pages/Chat";
+import "./styles/intro.css";
 
 export default function App() {
+  const [showIntro, setShowIntro] = useState(true);
+
+  if (showIntro) {
+    return <Intro onComplete={() => setShowIntro(false)} />;
+  }
+
   return (
     <BrowserRouter>
       <Routes>
