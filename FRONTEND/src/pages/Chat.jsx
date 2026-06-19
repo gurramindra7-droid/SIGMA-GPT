@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import API_BASE_URL from "../config/api";
+import { getChats, getChatById } from "../api";
 
 function newChat() {
   return { id: Date.now(), title: "New Chat", messages: [], backendId: null };
@@ -39,7 +40,51 @@ export default function Chat({ username, onLogout }) {
     return () => { cancelled = true; };
   }, []);
 
+  // ✅ Load existing chats from MongoDB on mount (after backend is ready)
+  useEffect(() => {
+    if (backendStatus !== "ready") return;
+
+    const loadChats = async () => {
+      try {
+        const token = localStorage.getItem("sigma_token");
+        if (!token) return;
+
+        const chatList = await getChats(token);
+        console.log("Chats loaded:", chatList);
+
+        if (!chatList || chatList.length === 0) return;
+
+        // Load the full messages for the most recent chat
+        const latestChat = chatList[0];
+        const fullChat = await getChatById(latestChat._id, token);
+        console.log("Selected chat:", fullChat);
+
+        const mappedChats = chatList.map((c) => ({
+          id: c._id,
+          title: c.title,
+          messages: [],
+          backendId: c._id,
+        }));
+
+        // Merge messages into the first (latest) chat
+        mappedChats[0].messages = fullChat.messages || [];
+
+        setChats(mappedChats);
+        setActiveChatId(mappedChats[0].id);
+        console.log("Messages rendered:", mappedChats[0].messages.length);
+      } catch (err) {
+        console.error("Failed to load chats:", err.message);
+      }
+    };
+
+    loadChats();
+  }, [backendStatus]);
+
   const activeChat = chats.find((c) => c.id === activeChatId);
+
+  useEffect(() => {
+    console.log("Messages rendered:", activeChat?.messages?.length ?? 0);
+  }, [activeChat?.messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -204,7 +249,23 @@ export default function Chat({ username, onLogout }) {
           {chats.map((chat) => (
             <div
               key={chat.id}
-              onClick={() => setActiveChatId(chat.id)}
+              onClick={() => {
+                setActiveChatId(chat.id);
+                // Load messages if this chat has a backendId but no messages yet
+                const target = chats.find(c => c.id === chat.id);
+                if (target && target.messages.length === 0 && target.backendId) {
+                  const token = localStorage.getItem("sigma_token");
+                  getChatById(target.backendId, token).then((full) => {
+                    setChats((prev) =>
+                      prev.map((c) =>
+                        c.id === chat.id ? { ...c, messages: full.messages || [] } : c
+                      )
+                    );
+                  }).catch((err) => {
+                    console.error("Failed to load chat messages:", err.message);
+                  });
+                }
+              }}
               className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer mb-1 transition ${
                 activeChatId === chat.id
                   ? "bg-gray-700 text-white"
