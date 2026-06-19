@@ -94,8 +94,11 @@ export default function Register() {
     setLoading(true);
     try {
       const data = await api.register(form.fullName, form.email, form.password);
+      console.log("[Register] Response received:", { hasToken: !!data.token, username: data.user?.username, keys: Object.keys(data) });
       localStorage.setItem("sigma_token", data.token);
       localStorage.setItem("sigma_username", data.user.username);
+      console.log("[Register] Stored — sigma_token:", localStorage.getItem("sigma_token") ? "✅ present" : "❌ MISSING");
+      console.log("[Register] Stored — sigma_username:", localStorage.getItem("sigma_username"));
       navigate("/chat");
     } catch (err) {
       setBannerError(err.message);

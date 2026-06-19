@@ -133,15 +133,21 @@ const Chat = mongoose.model("Chat", chatSchema);
 const authMiddleware = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader)
+    if (!authHeader) {
+      console.log("[Auth] ❌ No token provided");
       return res.status(401).json({ error: "No token provided" });
+    }
+    console.log("[Auth] Header received:", authHeader.slice(0, 40) + "...");
     const token = authHeader.startsWith("Bearer ")
       ? authHeader.slice(7)
       : authHeader;
+    console.log("[Auth] Token:", token.slice(0, 25) + "...");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("[Auth] ✅ Verified for user:", decoded.id);
     req.user = decoded;
     next();
   } catch (error) {
+    console.log("[Auth] ❌ Verification failed:", error.message);
     res.status(401).json({ error: "Invalid or expired token" });
   }
 };

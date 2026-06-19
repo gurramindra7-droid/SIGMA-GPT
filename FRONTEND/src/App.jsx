@@ -28,9 +28,19 @@ export default function App() {
 
 function ChatRoute() {
   const navigate = useNavigate();
+  const token = localStorage.getItem("sigma_token");
   const username = localStorage.getItem("sigma_username");
 
-  if (!username) {
+  console.log("[ChatRoute] sigma_token:", token ? "✅ present" : "❌ MISSING");
+  console.log("[ChatRoute] sigma_username:", username || "❌ MISSING");
+
+  // Require BOTH token and username to access chat
+  if (!username || !token) {
+    if (!token && username) {
+      console.log("[ChatRoute] ❌ Stale state — username without token. Clearing...");
+      localStorage.removeItem("sigma_token");
+      localStorage.removeItem("sigma_username");
+    }
     return <Navigate to="/login" replace />;
   }
 

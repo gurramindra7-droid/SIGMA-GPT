@@ -12,11 +12,13 @@ function newChat() {
 }
 
 export default function Chat({ username, onLogout }) {
+  console.log("[Chat] Mounted — sigma_token:", localStorage.getItem("sigma_token") ? "✅ present" : "❌ MISSING");
+  console.log("[Chat] Mounted — sigma_username:", username);
   const [chats, setChats] = useState([newChat()]);
   const [activeChatId, setActiveChatId] = useState(chats[0].id);
-  const [input, setInput] = useState();
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [backendStatus, setBackendStatus] = useState(connecting);
+  const [backendStatus, setBackendStatus] = useState("connecting");
   const [uploadingFile, setUploadingFile] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -27,7 +29,7 @@ export default function Chat({ username, onLogout }) {
   const textareaRef = useRef(null);
 
   const handleTranscript = useCallback((text) => {
-    setInput((prev) => prev + text);
+    setInput((prev) => (prev || "") + text);
   }, []);
 
   const { listening, supported: voiceSupported, error: voiceError, interimText, clearError, startListening, stopListening } = useVoiceInput(handleTranscript);
@@ -74,7 +76,7 @@ export default function Chat({ username, onLogout }) {
   const updateChat = (id, updater) => { setChats((prev) => prev.map((c) => (c.id === id ? updater(c) : c))); };
 
   const sendMessage = async () => {
-    const text = input.trim();
+    const text = (input || "").trim();
     const hasAttachment = !!attachedFile;
     if ((!text && !hasAttachment) || loading || uploadingFile) return;
     const messageText = text || (attachedFile ? attachedFile.name : '');
@@ -89,6 +91,8 @@ export default function Chat({ username, onLogout }) {
       const currentChat = activeChat;
       const chatIdToSend = currentChat?.backendId || null;
       const token = localStorage.getItem('sigma_token');
+      console.log('[Chat] Token from localStorage:', token ? token.slice(0, 25) + '...' : 'null');
+      console.log('[Chat] Sending to:', API_BASE_URL + '/api/chat');
       const body = { message: messageText, chatId: chatIdToSend, fileType: fileToSend?.type || null, fileUrl: fileToSend?.url || null, fileName: fileToSend?.name || null, fileText: fileToSend?.type === 'pdf' ? fileToSend.text : null };
       const res = await fetch(API_BASE_URL + '/api/chat', {
         method: 'POST',
@@ -258,7 +262,7 @@ export default function Chat({ username, onLogout }) {
                 <button onClick={() => fileInputRef.current?.click()} disabled={loading || uploadingFile} className="composer-btn" title="Upload image" aria-label="Upload image"><FiImage size={16} /></button>
                 <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={handlePdfSelect} style={{ display: "none" }} />
                 <button onClick={() => pdfInputRef.current?.click()} disabled={loading || uploadingFile} className="composer-btn" title="Upload PDF" aria-label="Upload PDF"><FiFile size={16} /></button>
-                <button onClick={sendMessage} disabled={loading || uploadingFile || (!input.trim() && !attachedFile)} className="composer-btn send" title="Send message" aria-label="Send message"><FiSend size={16} /></button>
+                <button onClick={sendMessage} disabled={ loading || uploadingFile || (!(input || "").trim() && !attachedFile)} className="composer-btn send" title="Send message" aria-label="Send message"><FiSend size={16} /></button>
               </div>
             </div>
           </div>
