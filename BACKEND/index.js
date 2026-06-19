@@ -6,7 +6,10 @@ import Groq from "groq-sdk";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
+import { dirname, resolve, join } from "path";
+import multer from "multer";
+import fs from "fs";
+import pdfParse from "pdf-parse";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,7 +36,37 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+
+// ─── Multer Config ───────────────────────────────────────────────────────────
+const uploadsDir = join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = file.originalname.split(".").pop();
+    cb(null, `${unique}.${ext}`);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedImages = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+  const allowedPdfs = ["application/pdf"];
+  const allowed = [...allowedImages, ...allowedPdfs];
+  if (allowed.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`File type ${file.mimetype} not allowed`), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+});
 
 // ✅ Health check — also used by Render cold-start pings
 app.get("/health", (req, res) => {
@@ -188,6 +221,50 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+// ─── Upload Routes ───────────────────────────────────────────────────────────
+
+app.post("/api/upload/image", authMiddleware, upload.single("file"), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({
+      url: fileUrl,
+      name: req.file.originalname,
+      type: "image",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Image upload failed" });
+  }
+});
+
+app.post("/api/upload/pdf", authMiddleware, upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+    // Extract text from PDF
+    const filePath = join(uploadsDir, req.file.filename);
+    const dataBuffer = fs.readFileSync(filePath);
+    const pdfData = await pdfParse(dataBuffer);
+    const extractedText = pdfData.text.slice(0, 15000); // limit to 15k chars
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({
+      url: fileUrl,
+      name: req.file.originalname,
+      type: "pdf",
+      text: extractedText,
+      pages: pdfData.numpages,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "PDF upload failed" });
+  }
+});
+
+// Serve uploaded files statically
+app.use("/uploads", express.static(uploadsDir));
+
 // ─── Chat Routes ──────────────────────────────────────────────────────────────
 
 app.get("/api/chats", authMiddleware, async (req, res) => {
@@ -239,12 +316,21 @@ app.post("/api/chat", authMiddleware, async (req, res) => {
       if (chat) {
         conversationHistory = chat.messages.map((m) => ({
           role: m.role,
-          content: m.content,
+          content: m.type && m.type !== "text"
+            ? `[${m.type.toUpperCase()}]: ${m.content || "(file attached)"}`
+            : m.content,
         }));
       }
     }
 
-    conversationHistory.push({ role: "user", content: message });
+    // Build the user message — include file context if present
+    let userContent = message;
+    if (req.body.fileType && req.body.fileText) {
+      userContent = `[${req.body.fileType.toUpperCase()} - ${req.body.fileName}]:\n${req.body.fileText}\n\nUser asks: ${message}`;
+    } else if (req.body.fileType) {
+      userContent = `[${req.body.fileType.toUpperCase()} - ${req.body.fileName}]: ${message}`;
+    }
+    conversationHistory.push({ role: "user", content: userContent });
 
     res.setHeader("Content-Type", "text/plain");
     res.setHeader("Transfer-Encoding", "chunked");
@@ -263,17 +349,22 @@ app.post("/api/chat", authMiddleware, async (req, res) => {
       res.write(text);
     }
 
+    // Build message objects with file metadata
+    const userMsgObj = {
+      role: "user",
+      content: message,
+      type: req.body.fileType || "text",
+      fileUrl: req.body.fileUrl || null,
+      fileName: req.body.fileName || null,
+    };
+    const assistantMsgObj = { role: "assistant", content: fullReply, type: "text" };
+
     let savedChatId;
 
     if (chatId && chat) {
       await Chat.findByIdAndUpdate(chatId, {
         $push: {
-          messages: {
-            $each: [
-              { role: "user", content: message },
-              { role: "assistant", content: fullReply },
-            ],
-          },
+          messages: { $each: [userMsgObj, assistantMsgObj] },
         },
       });
       savedChatId = chatId;
@@ -282,10 +373,7 @@ app.post("/api/chat", authMiddleware, async (req, res) => {
       const newChat = await Chat.create({
         userId: req.user.id,
         title,
-        messages: [
-          { role: "user", content: message },
-          { role: "assistant", content: fullReply },
-        ],
+        messages: [userMsgObj, assistantMsgObj],
       });
       savedChatId = newChat._id.toString();
     }
@@ -296,6 +384,19 @@ app.post("/api/chat", authMiddleware, async (req, res) => {
     console.log(error);
     res.status(500).json({ error: "Chat failed" });
   }
+});
+
+// ─── Error Middleware ─────────────────────────────────────────────────────────
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ error: err.message });
+  }
+  if (err.message?.includes?.("not allowed")) {
+    return res.status(400).json({ error: err.message });
+  }
+  console.error("Unhandled error:", err);
+  res.status(500).json({ error: "Internal server error" });
 });
 
 // ─── Start Server ─────────────────────────────────────────────────────────────

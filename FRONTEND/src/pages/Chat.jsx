@@ -1,12 +1,14 @@
 // src/pages/Chat.jsx
 import { useState, useRef, useEffect } from "react";
-import { FiSend, FiPlus, FiLogOut, FiTrash2 } from "react-icons/fi";
+import { FiSend, FiPlus, FiLogOut, FiTrash2, FiMic, FiImage, FiFile } from "react-icons/fi";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import API_BASE_URL from "../config/api";
-import { getChats, getChatById } from "../api";
+import { getChats, getChatById, uploadImage, uploadPdf } from "../api";
+import { useVoiceInput } from "../hooks/useVoiceInput";
+import FilePreview from "../components/FilePreview";
 
 function newChat() {
   return { id: Date.now(), title: "New Chat", messages: [], backendId: null };
@@ -18,7 +20,17 @@ export default function Chat({ username, onLogout }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState("connecting");
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [attachedFile, setAttachedFile] = useState(null); // { name, url, type, text? }
   const bottomRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const pdfInputRef = useRef(null);
+
+  // Voice input handler
+  const handleTranscript = (text) => {
+    setInput((prev) => prev + text);
+  };
+  const { listening, supported: voiceSupported, error: voiceError, clearError, startListening, stopListening } = useVoiceInput(handleTranscript);
 
   // Health check to handle Render cold start
   useEffect(() => {
@@ -94,26 +106,90 @@ export default function Chat({ username, onLogout }) {
     setChats((prev) => prev.map((c) => (c.id === id ? updater(c) : c)));
   };
 
+  // ─── File Upload Handlers ───────────────────────────────────────────────────
+
+  const handleImageSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingFile(true);
+    try {
+      const token = localStorage.getItem("sigma_token");
+      const result = await uploadImage(file, token);
+      setAttachedFile({ name: result.name, url: result.url, type: "image" });
+    } catch (err) {
+      console.error("Image upload error:", err.message);
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handlePdfSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingFile(true);
+    try {
+      const token = localStorage.getItem("sigma_token");
+      const result = await uploadPdf(file, token);
+      setAttachedFile({
+        name: result.name,
+        url: result.url,
+        type: "pdf",
+        text: result.text,
+      });
+    } catch (err) {
+      console.error("PDF upload error:", err.message);
+    } finally {
+      setUploadingFile(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = "";
+    }
+  };
+
+  const clearAttachedFile = () => setAttachedFile(null);
+
+  // ─── Send Message ───────────────────────────────────────────────────────────
+
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text || loading) return;
+    const hasAttachment = !!attachedFile;
+    if ((!text && !hasAttachment) || loading || uploadingFile) return;
+
+    const messageText = text || (attachedFile ? attachedFile.name : "");
     setInput("");
     setLoading(true);
 
-    const userMsg = { role: "user", content: text };
-    const assistantMsg = { role: "assistant", content: "" };
+    const userMsg = {
+      role: "user",
+      content: messageText,
+      type: attachedFile?.type || "text",
+      fileUrl: attachedFile?.url || null,
+      fileName: attachedFile?.name || null,
+    };
+    const assistantMsg = { role: "assistant", content: "", type: "text" };
 
     // Add user message + empty assistant message (for streaming) in one update
     updateChat(activeChatId, (c) => ({
       ...c,
-      title: c.messages.length === 0 ? text.slice(0, 35) : c.title,
+      title: c.messages.length === 0 ? messageText.slice(0, 35) : c.title,
       messages: [...c.messages, userMsg, assistantMsg],
     }));
+
+    const fileToSend = attachedFile;
+    setAttachedFile(null);
 
     try {
       const currentChat = activeChat;
       const chatIdToSend = currentChat?.backendId || null;
       const token = localStorage.getItem("sigma_token");
+
+      const body = {
+        message: messageText,
+        chatId: chatIdToSend,
+        fileType: fileToSend?.type || null,
+        fileUrl: fileToSend?.url || null,
+        fileName: fileToSend?.name || null,
+        fileText: fileToSend?.type === "pdf" ? fileToSend.text : null,
+      };
 
       const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: "POST",
@@ -121,7 +197,7 @@ export default function Chat({ username, onLogout }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ message: text, chatId: chatIdToSend }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
@@ -304,20 +380,45 @@ export default function Chat({ username, onLogout }) {
               <p className="text-xl font-semibold">How can I help you, {username}?</p>
               <p className="text-gray-500 text-sm mt-1">Ask me anything</p>
             </div>
-          )}
-
-          {activeChat?.messages.map((msg, i) => (
+          )}          {activeChat?.messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               {msg.role === "assistant" && (
                 <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-1">AI</div>
               )}
-              <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+              <div className={`max-w-[80%] ${
                 msg.role === "user"
-                  ? "bg-blue-600 text-white rounded-tr-sm"
-                  : "bg-gray-800 text-gray-100 rounded-tl-sm"
+                  ? "bg-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-3"
+                  : "bg-gray-800 text-gray-100 rounded-2xl rounded-tl-sm px-4 py-3"
               }`}>
+                {/* File attachments */}
+                {msg.type === "image" && msg.fileUrl && (
+                  <div className="mb-2">
+                    <img
+                      src={`${API_BASE_URL}${msg.fileUrl}`}
+                      alt={msg.fileName || "Uploaded image"}
+                      className="max-w-full max-h-64 rounded-lg object-contain"
+                      loading="lazy"
+                    />
+                    {msg.fileName && (
+                      <p className="text-xs mt-1 opacity-60">📷 {msg.fileName}</p>
+                    )}
+                  </div>
+                )}
+                {msg.type === "pdf" && msg.fileName && (
+                  <div className="mb-2 flex items-center gap-2 bg-gray-700/50 rounded-lg px-3 py-2 text-sm">
+                    <FiFile className="text-red-400 flex-shrink-0" size={16} />
+                    <span className="truncate">📄 {msg.fileName}</span>
+                  </div>
+                )}
+                {msg.type === "voice" && msg.content && (
+                  <div className="mb-2 flex items-center gap-2 text-sm opacity-70">
+                    <FiMic size={14} />
+                    <span className="italic">Voice: {msg.content.slice(0, 100)}</span>
+                  </div>
+                )}
+                {/* Text content */}
                 {msg.role === "user" ? (
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
                 ) : msg.content === "" ? (
                   <span className="inline-block w-2 h-4 bg-blue-400 animate-pulse rounded-sm" />
                 ) : (
@@ -351,9 +452,7 @@ export default function Chat({ username, onLogout }) {
                 )}
               </div>
               {msg.role === "user" && (
-                <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold ml-2 flex-shrink-0 mt-1">
-                  {username[0].toUpperCase()}
-                </div>
+                <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold ml-2 flex-shrink-0 mt-1">{username[0].toUpperCase()}</div>
               )}
             </div>
           ))}
@@ -362,24 +461,101 @@ export default function Chat({ username, onLogout }) {
 
         {/* Input */}
         <div className="px-4 py-4 border-t border-gray-800 bg-gray-900">
-          <div className="flex gap-3 items-end max-w-4xl mx-auto">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              disabled={loading}
-              rows={1}
-              placeholder="Ask anything... (Enter to send)"
-              className="flex-1 bg-gray-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm disabled:opacity-50"
-              style={{ maxHeight: "120px" }}
-            />
-            <button
-              onClick={sendMessage}
-              disabled={loading || !input.trim()}
-              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white p-3 rounded-xl transition flex-shrink-0"
-            >
-              <FiSend size={18} />
-            </button>
+          <div className="max-w-4xl mx-auto">
+            {/* File preview above input */}
+            {voiceError && (
+              <div className="mb-2 flex items-center gap-2 bg-red-900/30 border border-red-700 text-sm text-red-300 px-3 py-2 rounded-lg">
+                <span>{voiceError}</span>
+                <button onClick={clearError} className="ml-auto hover:text-red-200">✕</button>
+              </div>
+            )}
+            {attachedFile && (
+              <div className="mb-2">
+                <FilePreview
+                  file={attachedFile}
+                  extracting={uploadingFile}
+                  error=""
+                  onClear={clearAttachedFile}
+                />
+              </div>
+            )}
+            <div className="flex gap-3 items-end">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKey}
+                disabled={loading || uploadingFile}
+                rows={1}
+                placeholder={
+                  listening
+                    ? "🎤 Listening..."
+                    : attachedFile
+                    ? `Ask about this ${attachedFile.type}...`
+                    : "Ask anything... (Enter to send)"
+                }
+                className="flex-1 bg-gray-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm disabled:opacity-50"
+                style={{ maxHeight: "120px" }}
+              />
+
+              {/* Voice button */}
+              {voiceSupported && (
+                <button
+                  onClick={listening ? stopListening : startListening}
+                  disabled={loading || uploadingFile}
+                  className={`p-3 rounded-xl transition flex-shrink-0 ${
+                    listening
+                      ? "bg-red-600 text-white animate-pulse"
+                      : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                  }`}
+                  title={listening ? "Stop recording" : "Voice input"}
+                >
+                  <FiMic size={18} />
+                </button>
+              )}
+
+              {/* Image button */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading || uploadingFile}
+                className="bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-gray-300 p-3 rounded-xl transition flex-shrink-0"
+                title="Upload image"
+              >
+                <FiImage size={18} />
+              </button>
+
+              {/* PDF button */}
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf"
+                onChange={handlePdfSelect}
+                className="hidden"
+              />
+              <button
+                onClick={() => pdfInputRef.current?.click()}
+                disabled={loading || uploadingFile}
+                className="bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-gray-300 p-3 rounded-xl transition flex-shrink-0"
+                title="Upload PDF"
+              >
+                <FiFile size={18} />
+              </button>
+
+              {/* Send button */}
+              <button
+                onClick={sendMessage}
+                disabled={loading || uploadingFile || (!input.trim() && !attachedFile)}
+                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white p-3 rounded-xl transition flex-shrink-0"
+              >
+                <FiSend size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

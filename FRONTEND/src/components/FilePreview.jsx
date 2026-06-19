@@ -1,5 +1,5 @@
 // src/components/FilePreview.jsx
-import { FiFileText, FiCode, FiX } from "react-icons/fi";
+import { FiFileText, FiCode, FiImage, FiX } from "react-icons/fi";
 
 export default function FilePreview({ file, extracting, error, onClear }) {
   if (extracting) {
@@ -24,8 +24,8 @@ export default function FilePreview({ file, extracting, error, onClear }) {
 
   if (!file) return null;
 
-  const Icon = file.type === "pdf" ? FiFileText : FiCode;
-  const color = file.type === "pdf" ? "text-red-400" : "text-blue-400";
+  const Icon = file.type === "pdf" ? FiFileText : file.type === "image" ? FiImage : FiCode;
+  const color = file.type === "pdf" ? "text-red-400" : file.type === "image" ? "text-green-400" : "text-blue-400";
 
   return (
     <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 px-3 py-2 rounded-lg mb-2">

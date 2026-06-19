@@ -20,7 +20,9 @@
     "groq-sdk": "^1.2.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.3",
+    "multer": "^2.2.0",
     "nodemon": "^3.1.14",
-    "openai": "^6.38.0"
+    "openai": "^6.38.0",
+    "pdf-parse": "^2.4.5"
   }
 }

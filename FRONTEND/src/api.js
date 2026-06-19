@@ -78,6 +78,32 @@ const api = {
     if (!res.ok) throw new Error(data.error || "Failed to delete chat");
     return data;
   },
+
+  uploadImage: async (file, token) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE_URL}/api/upload/image`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Image upload failed");
+    return data;
+  },
+
+  uploadPdf: async (file, token) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE_URL}/api/upload/pdf`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "PDF upload failed");
+    return data;
+  },
 };
 
 export default api;
@@ -87,3 +113,5 @@ export const sendMessage = api.sendMessage;
 export const getChats = api.getChats;
 export const getChatById = api.getChatById;
 export const deleteChat = api.deleteChat;
+export const uploadImage = api.uploadImage;
+export const uploadPdf = api.uploadPdf;
