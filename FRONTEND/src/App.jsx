@@ -35,6 +35,7 @@ function ChatRoute() {
   }
 
   const handleLogout = () => {
+    localStorage.removeItem("sigma_token");
     localStorage.removeItem("sigma_username");
     navigate("/login");
   };

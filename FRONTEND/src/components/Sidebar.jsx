@@ -1,99 +1,153 @@
 // src/components/Sidebar.jsx
-import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import api from "../api";
-import { FiPlus, FiTrash2, FiLogOut, FiMessageSquare } from "react-icons/fi";
+import { useState, useEffect, useMemo } from "react";
+import { FiPlus, FiTrash2, FiLogOut, FiMessageSquare, FiSearch, FiStar } from "react-icons/fi";
 
-export default function Sidebar({ activeChatId, onSelectChat, onNewChat, refreshTrigger }) {
-  const { user, logout } = useAuth();
-  const [chats, setChats] = useState([]);
-  const [loading, setLoading] = useState(false);
+const STORAGE_PINNED_KEY = "sigma_pinned_chats";
 
-  const fetchChats = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const chats = await api.getChats(token);
-      setChats(chats);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+function getPinnedIds() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_PINNED_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function savePinnedIds(ids) {
+  localStorage.setItem(STORAGE_PINNED_KEY, JSON.stringify(ids));
+}
+
+export default function Sidebar({
+  chats,
+  activeChatId,
+  onSelectChat,
+  onNewChat,
+  onDeleteChat,
+  username,
+  userEmail,
+  onLogout,
+  mobileOpen,
+  onMobileClose,
+}) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pinnedIds, setPinnedIds] = useState(getPinnedIds);
 
   useEffect(() => {
-    fetchChats();
-  }, [refreshTrigger]);
+    savePinnedIds(pinnedIds);
+  }, [pinnedIds]);
 
-  const deleteChat = async (e, chatId) => {
+  const togglePin = (id, e) => {
     e.stopPropagation();
-    const token = localStorage.getItem("token");
-    await api.deleteChat(chatId, token);
-    setChats((prev) => prev.filter((c) => c._id !== chatId));
-    if (activeChatId === chatId) onNewChat();
+    setPinnedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
 
+  const filteredChats = useMemo(() => {
+    if (!searchQuery.trim()) return chats;
+    const q = searchQuery.toLowerCase();
+    return chats.filter(
+      (c) =>
+        (c.title && c.title.toLowerCase().includes(q)) ||
+        (c.lastMessage && c.lastMessage.toLowerCase().includes(q))
+    );
+  }, [chats, searchQuery]);
+
+  const sortedChats = useMemo(() => {
+    const pinned = filteredChats.filter((c) => pinnedIds.includes(c.id));
+    const unpinned = filteredChats.filter((c) => !pinnedIds.includes(c.id));
+    return [...pinned, ...unpinned];
+  }, [filteredChats, pinnedIds]);
+
+  const handleSelect = (id) => {
+    onSelectChat(id);
+    if (onMobileClose) onMobileClose();
+  };
+
+  const initials = username
+    ? username.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "U";
+
   return (
-    <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col h-full">
+    <aside className={`sidebar${mobileOpen ? " mobile-open" : ""}`}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-800">
-        <h1 className="text-xl font-bold text-white">⚡ SigmaGPT</h1>
-        <p className="text-xs text-gray-500 mt-0.5">Powered by Groq + Llama 3.3</p>
+      <div className="sidebar-header">
+        <div className="sidebar-logo">SIGMA GPT</div>
+        <div className="sidebar-subtitle">Groq · Llama 3.3 70B</div>
       </div>
 
-      {/* New Chat */}
-      <div className="p-3">
-        <button
-          onClick={onNewChat}
-          className="w-full flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg font-medium text-sm transition"
-        >
-          <FiPlus size={16} />
-          New Chat
-        </button>
+      {/* New Chat Button */}
+      <button className="sidebar-new-chat-btn" onClick={onNewChat}>
+        <FiPlus size={16} />
+        New Chat
+      </button>
+
+      {/* Search */}
+      <div className="sidebar-search">
+        <FiSearch className="sidebar-search-icon" size={13} />
+        <input
+          type="text"
+          className="sidebar-search-input"
+          placeholder="Search chats..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          aria-label="Search chats"
+        />
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto px-2 py-1">
-        {loading ? (
-          <p className="text-gray-500 text-xs text-center py-4">Loading...</p>
-        ) : chats.length === 0 ? (
-          <p className="text-gray-600 text-xs text-center py-4">No chats yet</p>
+      <div className="sidebar-chat-list">
+        {sortedChats.length === 0 ? (
+          <p className="text-xs text-center py-8" style={{ color: "var(--text-muted)" }}>
+            {searchQuery ? "No chats found" : "No chats yet"}
+          </p>
         ) : (
-          chats.map((chat) => (
+          sortedChats.map((chat) => (
             <div
-              key={chat._id}
-              onClick={() => onSelectChat(chat._id)}
-              className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer mb-1 transition ${
-                activeChatId === chat._id
-                  ? "bg-gray-700 text-white"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
-              }`}
+              key={chat.id}
+              className={`sidebar-chat-item${activeChatId === chat.id ? " active" : ""}`}
+              onClick={() => handleSelect(chat.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === "Enter" && handleSelect(chat.id)}
+              aria-label={`Chat: ${chat.title}`}
             >
-              <FiMessageSquare size={14} className="flex-shrink-0" />
-              <span className="text-sm truncate flex-1">{chat.title || "Untitled"}</span>
-              <button
-                onClick={(e) => deleteChat(e, chat._id)}
-                className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition flex-shrink-0"
-              >
-                <FiTrash2 size={13} />
-              </button>
+              <FiMessageSquare className="sidebar-chat-item-icon" size={14} />
+              <span className="sidebar-chat-item-title" title={chat.title}>
+                {chat.title || "New Chat"}
+              </span>
+              <div className="sidebar-chat-item-actions">
+                <button
+                  className="sidebar-chat-action-btn"
+                  onClick={(e) => togglePin(chat.id, e)}
+                  title={pinnedIds.includes(chat.id) ? "Unpin" : "Pin"}
+                  style={{ color: pinnedIds.includes(chat.id) ? "var(--accent-cyan)" : undefined }}
+                >
+                  <FiStar size={11} />
+                </button>
+                <button
+                  className="sidebar-chat-action-btn danger"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteChat(chat.id);
+                  }}
+                  title="Delete chat"
+                >
+                  <FiTrash2 size={11} />
+                </button>
+              </div>
             </div>
           ))
         )}
       </div>
 
-      {/* User Footer */}
-      <div className="p-3 border-t border-gray-800 flex items-center justify-between">
-        <div className="min-w-0">
-          <p className="text-sm text-white font-medium truncate">{user?.username}</p>
-          <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+      {/* Footer / User Profile */}
+      <div className="sidebar-footer">
+        <div className="sidebar-user-avatar">{initials}</div>
+        <div className="sidebar-user-info">
+          <div className="sidebar-user-name">{username || "User"}</div>
+          <div className="sidebar-user-status">Online</div>
         </div>
-        <button
-          onClick={logout}
-          className="text-gray-500 hover:text-red-400 transition flex-shrink-0 ml-2"
-          title="Logout"
-        >
+        <button className="sidebar-logout-btn" onClick={onLogout} title="Logout" aria-label="Logout">
           <FiLogOut size={16} />
         </button>
       </div>

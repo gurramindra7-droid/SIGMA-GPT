@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 import { dirname, resolve, join } from "path";
 import multer from "multer";
 import fs from "fs";
-import pdfParse from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -245,17 +245,22 @@ app.post("/api/upload/pdf", authMiddleware, upload.single("file"), async (req, r
     // Extract text from PDF
     const filePath = join(uploadsDir, req.file.filename);
     const dataBuffer = fs.readFileSync(filePath);
-    const pdfData = await pdfParse(dataBuffer);
-    const extractedText = pdfData.text.slice(0, 15000); // limit to 15k chars
+    const pdfParser = new PDFParse({ data: dataBuffer });
+    try {
+      const pdfData = await pdfParser.getText();
+      const extractedText = pdfData.text.slice(0, 15000); // limit to 15k chars
 
-    const fileUrl = `/uploads/${req.file.filename}`;
-    res.json({
-      url: fileUrl,
-      name: req.file.originalname,
-      type: "pdf",
-      text: extractedText,
-      pages: pdfData.numpages,
-    });
+      const fileUrl = `/uploads/${req.file.filename}`;
+      res.json({
+        url: fileUrl,
+        name: req.file.originalname,
+        type: "pdf",
+        text: extractedText,
+        pages: pdfData.total,
+      });
+    } finally {
+      await pdfParser.destroy();
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "PDF upload failed" });
