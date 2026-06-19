@@ -9,6 +9,7 @@ import API_BASE_URL from "../config/api";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+console.log("GROQ KEY LOADED:", GROQ_API_KEY ? "YES ✅" : "MISSING ❌");
 const MODEL = "llama-3.3-70b-versatile";
 
 function newChat() {
