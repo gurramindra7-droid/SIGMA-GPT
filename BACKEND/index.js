@@ -23,9 +23,9 @@ const app = express();
 app.use(
   cors({
     origin: [
+      "https://sigma-gpt-lake.vercel.app",
       "http://localhost:5173",
       "http://localhost:5174",
-      "https://sigma-gpt-zeta.vercel.app",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
