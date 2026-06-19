@@ -7,13 +7,8 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import API_BASE_URL from "../config/api";
 
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-console.log("GROQ KEY LOADED:", GROQ_API_KEY ? "YES ✅" : "MISSING ❌");
-const MODEL = "llama-3.3-70b-versatile";
-
 function newChat() {
-  return { id: Date.now(), title: "New Chat", messages: [] };
+  return { id: Date.now(), title: "New Chat", messages: [], backendId: null };
 }
 
 export default function Chat({ username, onLogout }) {
@@ -71,27 +66,23 @@ export default function Chat({ username, onLogout }) {
     }));
 
     try {
-      const history = [...activeChat.messages, userMsg];
+      const currentChat = activeChat;
+      const chatIdToSend = currentChat?.backendId || null;
+      const token = localStorage.getItem("sigma_token");
 
-      const res = await fetch(GROQ_URL, {
+      const res = await fetch(`${API_BASE_URL}/api/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${GROQ_API_KEY}`,
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: history,
-          max_tokens: 1024,
-          stream: true,
-        }),
+        body: JSON.stringify({ message: text, chatId: chatIdToSend }),
       });
 
-      // ✅ Check for API errors (invalid key, rate limit, etc.) before streaming
       if (!res.ok) {
         const errBody = await res.text();
-        console.error("Groq API error:", res.status, errBody);
-        throw new Error(`Groq API error ${res.status}: ${errBody.slice(0, 200)}`);
+        console.error("Backend API error:", res.status, errBody);
+        throw new Error(`API error ${res.status}: ${errBody.slice(0, 200)}`);
       }
 
       const reader = res.body.getReader();
@@ -101,27 +92,34 @@ export default function Chat({ username, onLogout }) {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n").filter((l) => l.startsWith("data: "));
-        for (const line of lines) {
-          const json = line.replace("data: ", "");
-          if (json === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(json);
-            const delta = parsed.choices[0]?.delta?.content || "";
-            full += delta;
-            setChats((prev) =>
-              prev.map((c) => {
-                if (c.id !== activeChatId) return c;
-                const msgs = [...c.messages];
-                msgs[msgs.length - 1] = { role: "assistant", content: full };
-                return { ...c, messages: msgs };
-              })
-            );
-          } catch (parseErr) {
-            console.warn("SSE parse warning:", parseErr.message, line.slice(0, 120));
-          }
-        }
+        const chunk = decoder.decode(value, { stream: true });
+        full += chunk;
+
+        // Realtime streaming update
+        setChats((prev) =>
+          prev.map((c) => {
+            if (c.id !== activeChatId) return c;
+            const msgs = [...c.messages];
+            msgs[msgs.length - 1] = { role: "assistant", content: full };
+            return { ...c, messages: msgs };
+          })
+        );
+      }
+
+      // After stream ends: strip the chat ID marker from the final content
+      const marker = "__CHAT_ID__:";
+      const markerIdx = full.indexOf(marker);
+      if (markerIdx >= 0) {
+        const content = full.slice(0, markerIdx).trimEnd();
+        const newBackendId = full.slice(markerIdx + marker.length).trim();
+        setChats((prev) =>
+          prev.map((c) => {
+            if (c.id !== activeChatId) return c;
+            const msgs = [...c.messages];
+            msgs[msgs.length - 1] = { role: "assistant", content };
+            return { ...c, backendId: newBackendId, messages: msgs };
+          })
+        );
       }
 
       console.log("✅ AI response complete —", full.length, "chars received");
