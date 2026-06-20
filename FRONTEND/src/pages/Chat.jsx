@@ -23,9 +23,9 @@ export default function Chat({ username, onLogout }) {
   const [attachedFile, setAttachedFile] = useState(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showWaveform, setShowWaveform] = useState(false);
-  const [userScrolled, setUserScrolled] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true);
   const messagesEndRef = useRef(null);
-  const messagesContainerRef = useRef(null);
+  const chatBoxRef = useRef(null);
   const fileInputRef = useRef(null);
   const pdfInputRef = useRef(null);
   const textareaRef = useRef(null);
@@ -68,20 +68,20 @@ export default function Chat({ username, onLogout }) {
     loadChats();
   }, [backendStatus]);
 
+  // Handle manual scroll detection
   const handleScroll = useCallback(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    const isAtBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-    setUserScrolled(!isAtBottom);
+    const el = chatBoxRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setAutoScroll(distFromBottom < 80);
   }, []);
 
-  // Only auto-scroll if user hasn't scrolled up
+  // Auto scroll only when user is at bottom
   useEffect(() => {
-    if (!userScrolled) {
+    if (autoScroll) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [activeChat?.messages, userScrolled]);
+  }, [activeChat?.messages, autoScroll]);
 
   useEffect(() => {
     const ta = textareaRef.current;
@@ -231,6 +231,13 @@ export default function Chat({ username, onLogout }) {
         {/* Desktop Header */}
         <div className="chat-header">
           <div className="chat-header-left">
+            <button
+              className="hamburger-btn chat-header-hamburger"
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Open sidebar"
+            >
+              <FiMenu size={20} />
+            </button>
             <span className="chat-header-logo">SIGMA GPT</span>
             <span className="chat-header-model">Groq · Llama 3.3 70B</span>
           </div>
@@ -240,7 +247,7 @@ export default function Chat({ username, onLogout }) {
         </div>
         <div
           className="messages-container"
-          ref={messagesContainerRef}
+          ref={chatBoxRef}
           onScroll={handleScroll}
         >
           <div className="messages-inner">

@@ -109,6 +109,11 @@
   color: var(--text-secondary);
 }
 
+/* Hamburger in desktop header — hidden on desktop, shown on mobile */
+.chat-header-hamburger {
+  display: none;
+}
+
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -930,15 +935,28 @@
 
 /* ---- Responsive Mobile ---- */
 @media (max-width: 768px) {
+  .chat-header { display: none; }
+  .chat-header-hamburger { display: flex !important; }
   .sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0;
-    transform: translateX(-100%);
-    z-index: 30;
-    width: 280px;
-    box-shadow: var(--shadow-lg);
+    position: fixed !important;
+    left: -260px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 260px !important;
+    z-index: 100 !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    transform: none !important;
+    transition: left 0.3s ease !important;
   }
-  .sidebar.mobile-open { transform: translateX(0); }
-  .sidebar-overlay.open { display: block; }
+  .sidebar.mobile-open { left: 0 !important; }
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 99;
+    backdrop-filter: blur(4px);
+  }
+  .sidebar-overlay.open { display: block !important; }
   .chat-layout { flex-direction: column; }
   .mobile-header { display: flex; }
   .messages-container { padding: 12px 8px; }
