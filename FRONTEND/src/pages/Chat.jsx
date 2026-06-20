@@ -1,6 +1,6 @@
 // src/pages/Chat.jsx
 import { useState, useRef, useEffect, useCallback } from "react";
-import { FiSend, FiPlus, FiMic, FiImage, FiFile, FiMenu, FiX } from "react-icons/fi";
+import { FiSend, FiPlus, FiMic, FiImage, FiFile, FiMenu } from "react-icons/fi";
 import API_BASE_URL from "../config/api";
 import { getChats, getChatById, uploadImage, uploadPdf } from "../api";
 import { useVoiceInput } from "../hooks/useVoiceInput";
@@ -12,8 +12,6 @@ function newChat() {
 }
 
 export default function Chat({ username, onLogout }) {
-  console.log("[Chat] Mounted — sigma_token:", localStorage.getItem("sigma_token") ? "✅ present" : "❌ MISSING");
-  console.log("[Chat] Mounted — sigma_username:", username);
   const [chats, setChats] = useState([newChat()]);
   const [activeChatId, setActiveChatId] = useState(chats[0].id);
   const [input, setInput] = useState("");
@@ -21,7 +19,7 @@ export default function Chat({ username, onLogout }) {
   const [backendStatus, setBackendStatus] = useState("connecting");
   const [uploadingFile, setUploadingFile] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showWaveform, setShowWaveform] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const messagesEndRef = useRef(null);
@@ -29,6 +27,8 @@ export default function Chat({ username, onLogout }) {
   const fileInputRef = useRef(null);
   const pdfInputRef = useRef(null);
   const textareaRef = useRef(null);
+
+  const isGuest = username === "Guest";
 
   const handleTranscript = useCallback((text) => {
     setInput((prev) => (prev || "") + text);
@@ -51,6 +51,7 @@ export default function Chat({ username, onLogout }) {
 
   useEffect(() => {
     if (backendStatus !== 'ready') return;
+    if (isGuest) return; // Guest users don't load from backend
     const loadChats = async () => {
       try {
         const token = localStorage.getItem('sigma_token');
@@ -66,7 +67,7 @@ export default function Chat({ username, onLogout }) {
       } catch (err) { console.error('Failed to load chats:', err.message); }
     };
     loadChats();
-  }, [backendStatus]);
+  }, [backendStatus, isGuest]);
 
   // Handle manual scroll detection
   const handleScroll = useCallback(() => {
@@ -106,8 +107,6 @@ export default function Chat({ username, onLogout }) {
       const currentChat = activeChat;
       const chatIdToSend = currentChat?.backendId || null;
       const token = localStorage.getItem('sigma_token');
-      console.log('[Chat] Token from localStorage:', token ? token.slice(0, 25) + '...' : 'null');
-      console.log('[Chat] Sending to:', API_BASE_URL + '/api/chat');
       const body = { message: messageText, chatId: chatIdToSend, fileType: fileToSend?.type || null, fileUrl: fileToSend?.url || null, fileName: fileToSend?.name || null, fileText: fileToSend?.type === 'pdf' ? fileToSend.text : null };
       const res = await fetch(API_BASE_URL + '/api/chat', {
         method: 'POST',
@@ -140,7 +139,7 @@ export default function Chat({ username, onLogout }) {
 
   const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
 
-  const addNewChat = () => { const c = newChat(); setChats((prev) => [c, ...prev]); setActiveChatId(c.id); setMobileSidebarOpen(false); };
+  const addNewChat = () => { const c = newChat(); setChats((prev) => [c, ...prev]); setActiveChatId(c.id); setSidebarOpen(false); };
 
   const deleteChat = (id) => {
     const remaining = chats.filter((c) => c.id !== id);
@@ -160,12 +159,10 @@ export default function Chat({ username, onLogout }) {
   const handleImageSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    console.log('[Upload] Image selected:', file.name, file.size);
     setUploadingFile(true);
     try {
       const token = localStorage.getItem('sigma_token');
       const result = await uploadImage(file, token);
-      console.log('[Upload] Image uploaded:', result);
       setAttachedFile({ name: result.name, url: result.url, type: 'image' });
     } catch (err) {
       console.error('[Upload] Image upload error:', err.message);
@@ -178,12 +175,10 @@ export default function Chat({ username, onLogout }) {
   const handlePdfSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    console.log('[Upload] PDF selected:', file.name, file.size);
     setUploadingFile(true);
     try {
       const token = localStorage.getItem('sigma_token');
       const result = await uploadPdf(file, token);
-      console.log('[Upload] PDF uploaded:', result);
       setAttachedFile({ name: result.name, url: result.url, type: 'pdf', text: result.text });
     } catch (err) {
       console.error('[Upload] PDF upload error:', err.message);
@@ -200,7 +195,7 @@ export default function Chat({ username, onLogout }) {
 
   const suggestions = ["Explain quantum computing simply", "Write a Python script to analyze CSV data", "Help me debug a React component", "Create a workout plan for beginners"];
 
-  if (backendStatus === "connecting") {
+  if (backendStatus === "connecting" && !isGuest) {
     return (
       <div className="cold-start-screen">
         <div className="cold-start-icon">&#x26A1;</div>
@@ -220,37 +215,48 @@ export default function Chat({ username, onLogout }) {
 
   return (
     <div className="chat-layout">
-      <div className={"sidebar-overlay" + (mobileSidebarOpen ? " open" : "")} onClick={() => setMobileSidebarOpen(false)} />
-      <Sidebar chats={chats} activeChatId={activeChatId} onSelectChat={selectChat} onNewChat={addNewChat} onDeleteChat={deleteChat} username={username} userEmail="" onLogout={onLogout} mobileOpen={mobileSidebarOpen} onMobileClose={() => setMobileSidebarOpen(false)} />
+      {/* Mobile overlay */}
+      <div className={"sidebar-overlay" + (sidebarOpen ? " open" : "")} onClick={() => setSidebarOpen(false)} />
+
+      {/* Sidebar */}
+      <Sidebar chats={chats} activeChatId={activeChatId} onSelectChat={selectChat} onNewChat={addNewChat} onDeleteChat={deleteChat} username={username} userEmail="" onLogout={onLogout} mobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
+
+      {/* Main content */}
       <div className="chat-main">
+        {/* Mobile header */}
         <div className="mobile-header">
-          <button className="hamburger-btn" onClick={() => setMobileSidebarOpen(true)} aria-label="Open sidebar"><FiMenu size={20} /></button>
+          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar"><FiMenu size={20} /></button>
           <span className="mobile-header-title">SIGMA GPT</span>
           <button className="mobile-header-new-btn" onClick={addNewChat} aria-label="New chat"><FiPlus size={16} /></button>
         </div>
-        {/* Desktop Header */}
+
+        {/* Desktop header */}
         <div className="chat-header">
           <div className="chat-header-left">
-            <button
-              className="hamburger-btn chat-header-hamburger"
-              onClick={() => setMobileSidebarOpen(true)}
-              aria-label="Open sidebar"
-            >
+            <button className="hamburger-btn chat-header-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
               <FiMenu size={20} />
             </button>
-            <span className="chat-header-logo">SIGMA GPT</span>
-            <span className="chat-header-model">Groq · Llama 3.3 70B</span>
+            <div>
+              <span className="chat-header-title">{activeChat?.title || "New Chat"}</span>
+              <span className="chat-header-subtitle">Groq · Llama 3.3 70B</span>
+            </div>
           </div>
           <div className="chat-header-right">
-            <span className="chat-header-user">{username}</span>
+            <div className="chat-header-avatar">Σ</div>
           </div>
         </div>
-        <div
-          className="messages-container"
-          ref={chatBoxRef}
-          onScroll={handleScroll}
-        >
+
+        {/* Messages */}
+        <div className="messages-container" ref={chatBoxRef} onScroll={handleScroll}>
           <div className="messages-inner">
+            {/* Guest banner */}
+            {isGuest && (
+              <div className="guest-banner">
+                <span>👤 You are in Guest mode — </span>
+                <span onClick={() => window.location.href='/register'} className="guest-banner-link">Sign up for full access</span>
+              </div>
+            )}
+
             {msgs.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-logo">SIGMA GPT</div>
@@ -270,12 +276,14 @@ export default function Chat({ username, onLogout }) {
             <div ref={messagesEndRef} />
           </div>
         </div>
+
+        {/* Composer */}
         <div className="composer-wrapper">
           <div className="composer-inner">
             {voiceError && (
               <div className="voice-error-banner">
                 <span>{voiceError}</span>
-                <button className="voice-error-close" onClick={clearError}><FiX size={14} /></button>
+                <button className="voice-error-close" onClick={clearError}>✕</button>
               </div>
             )}
             {listening && interimText && <div className="voice-live-transcript">{interimText}</div>}
@@ -283,22 +291,28 @@ export default function Chat({ username, onLogout }) {
               <div className="composer-file-preview">
                 <span className="composer-file-preview-icon">{attachedFile.type === "image" ? "🖼️" : "📄"}</span>
                 <span className="composer-file-preview-name">{attachedFile.name}</span>
-                <button className="composer-file-preview-remove" onClick={() => setAttachedFile(null)} aria-label="Remove attachment"><FiX size={14} /></button>
+                <button className="composer-file-preview-remove" onClick={() => setAttachedFile(null)} aria-label="Remove attachment">✕</button>
               </div>
             )}
-            <div className={"composer-container" + (attachedFile ? " has-attachment" : "")}>
-              <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading || uploadingFile} rows={1} placeholder={listening ? "🎤 Listening..." : attachedFile ? "Ask about this " + attachedFile.type + "..." : "Type a message..."} className="composer-textarea" aria-label="Message input" />
+            <div className="composer-container">
+              <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading || uploadingFile} rows={1} placeholder={listening ? "🎤 Listening..." : attachedFile ? "Ask about this " + attachedFile.type + "..." : "Message SIGMA-GPT..."} className="composer-textarea" aria-label="Message input" />
               <div className="composer-actions">
-                {voiceSupported && (
+                {!isGuest && voiceSupported && (
                   <button onClick={toggleVoice} disabled={loading || uploadingFile} className={"composer-btn" + (listening ? " recording" : "")} title={listening ? "Stop recording" : "Voice input"} aria-label={listening ? "Stop recording" : "Voice input"}>
                     {listening ? <span className="voice-recording-indicator"><span className="voice-recording-dot" /></span> : <FiMic size={16} />}
                   </button>
                 )}
-                <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handleImageSelect} style={{ display: "none" }} />
-                <button onClick={() => fileInputRef.current?.click()} disabled={loading || uploadingFile} className="composer-btn" title="Upload image" aria-label="Upload image"><FiImage size={16} /></button>
-                <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={handlePdfSelect} style={{ display: "none" }} />
-                <button onClick={() => pdfInputRef.current?.click()} disabled={loading || uploadingFile} className="composer-btn" title="Upload PDF" aria-label="Upload PDF"><FiFile size={16} /></button>
-                <button onClick={sendMessage} disabled={ loading || uploadingFile || (!(input || "").trim() && !attachedFile)} className="composer-btn send" title="Send message" aria-label="Send message"><FiSend size={16} /></button>
+                {!isGuest && (
+                  <>
+                    <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handleImageSelect} style={{ display: "none" }} />
+                    <button onClick={() => fileInputRef.current?.click()} disabled={loading || uploadingFile} className="composer-btn" title="Upload image" aria-label="Upload image"><FiImage size={16} /></button>
+                    <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={handlePdfSelect} style={{ display: "none" }} />
+                    <button onClick={() => pdfInputRef.current?.click()} disabled={loading || uploadingFile} className="composer-btn" title="Upload PDF" aria-label="Upload PDF"><FiFile size={16} /></button>
+                  </>
+                )}
+                <button onClick={sendMessage} disabled={loading || uploadingFile || (!(input || "").trim() && !attachedFile)} className="composer-btn send" title="Send message" aria-label="Send message">
+                  <FiSend size={16} />
+                </button>
               </div>
             </div>
           </div>

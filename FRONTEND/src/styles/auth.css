@@ -603,6 +603,63 @@
   animation: authErrorSlide 0.25s ease;
 }
 
+/* ---- Guest Button (Login) ---- */
+.auth-guest-btn {
+  width: 100%;
+  padding: 12px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--input-radius);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.auth-guest-btn:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ---- Guest Link (Register) ---- */
+.guest-link {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.auth-guest-link-btn {
+  background: none;
+  border: none;
+  color: var(--accent-cyan);
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  padding: 8px 16px;
+  transition: color var(--transition-fast);
+}
+
+.auth-guest-link-btn:hover {
+  color: var(--accent-violet);
+  text-decoration: underline;
+}
+
+.auth-guest-link-btn span {
+  display: inline-block;
+  transition: transform var(--transition-fast);
+}
+
+.auth-guest-link-btn:hover span {
+  transform: translateX(4px);
+}
+
 /* ---- Scrollbar styling (Webkit) ---- */
 .auth-page::-webkit-scrollbar {
   width: 6px;

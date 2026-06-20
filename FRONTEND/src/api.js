@@ -17,11 +17,11 @@ export async function fetchWithRetry(url, options = {}, retries = 3) {
 }
 
 const api = {
-  register: async (username, email, password) => {
+  register: async (fullName, email, password, username) => {
     const res = await fetchWithRetry(`${API_BASE_URL}/api/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password }),
+      body: JSON.stringify({ fullName, email, password, username: username || fullName }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Registration failed");

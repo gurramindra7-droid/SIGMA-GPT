@@ -1,128 +1,216 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Intro({ onComplete }) {
-  const [phase, setPhase] = useState(0);
   const canvasRef = useRef(null);
+  const [phase, setPhase] = useState(0);
+  const animRef = useRef(null);
 
-  const letters = ["S","I","G","M","A","-","G","P","T"];
-
-  // Particle canvas animation
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    let W = canvas.width = window.innerWidth;
+    let H = canvas.height = window.innerHeight;
+    let t = 0;
 
-    const particles = Array.from({length: 120}, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.8,
-      vy: (Math.random() - 0.5) * 0.8,
-      size: Math.random() * 2.5 + 0.5,
-      opacity: Math.random() * 0.7 + 0.1,
-      color: Math.random() > 0.5 ? "#7C3AED" : "#06B6D4"
+    // DNA Helix particles
+    const dnaParticles = Array.from({length: 200}, (_, i) => ({
+      angle: (i / 200) * Math.PI * 8,
+      offset: (i / 200) * H * 2 - H,
+      strand: i % 2,
+      speed: 0.02,
+      size: Math.random() * 3 + 1,
     }));
 
-    let animId;
+    // Stars
+    const stars = Array.from({length: 300}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      size: Math.random() * 1.5,
+      twinkle: Math.random() * Math.PI * 2,
+    }));
+
+    // Sphere particles
+    const sphereParticles = Array.from({length: 150}, (_, i) => ({
+      theta: Math.random() * Math.PI * 2,
+      phi: Math.random() * Math.PI,
+      r: 120,
+      speed: (Math.random() - 0.5) * 0.02,
+    }));
+
+    // Orbiting rings
+    const rings = Array.from({length: 5}, (_, i) => ({
+      radius: 150 + i * 40,
+      angle: (i / 5) * Math.PI * 2,
+      tilt: (i / 5) * Math.PI * 0.5,
+      speed: 0.005 + i * 0.003,
+    }));
+
     const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = canvas.width;
-        if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height;
-        if (p.y > canvas.height) p.y = 0;
+      t += 0.016;
+      ctx.clearRect(0, 0, W, H);
+
+      // Background gradient
+      const bg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W*0.7);
+      bg.addColorStop(0, "#0D0D1A");
+      bg.addColorStop(1, "#030308");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // Stars
+      stars.forEach(s => {
+        const twinkle = 0.4 + 0.6 * Math.sin(s.twinkle + t * 2);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = p.opacity;
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${twinkle * 0.8})`;
         ctx.fill();
       });
-      // Draw connections between close particles
-      particles.forEach((p1, i) => {
-        particles.slice(i+1).forEach(p2 => {
-          const d = Math.hypot(p1.x-p2.x, p1.y-p2.y);
-          if (d < 100) {
+
+      if (t < 4) {
+        // PHASE 1: DNA HELIX
+        const cx = W / 2, cy = H / 2;
+        dnaParticles.forEach((p, i) => {
+          const progress = Math.min(t / 2, 1);
+          const a = p.angle + t * 0.5;
+          const x = cx + Math.cos(a + p.strand * Math.PI) * 120 * progress;
+          const y = cy + (p.offset * 0.3) * progress;
+          const z = Math.sin(a) * 0.5 + 0.5;
+
+          const color = p.strand === 0
+            ? `rgba(124,58,237,${z * 0.9 * progress})`
+            : `rgba(6,182,212,${z * 0.9 * progress})`;
+
+          ctx.beginPath();
+          ctx.arc(x, y, p.size * z, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+
+          // Connect strands
+          if (i % 10 === 0 && i + 1 < dnaParticles.length) {
+            const next = dnaParticles[i + 1];
+            const na = next.angle + t * 0.5;
+            const nx = cx + Math.cos(na + next.strand * Math.PI) * 120 * progress;
+            const ny = cy + (next.offset * 0.3) * progress;
             ctx.beginPath();
-            ctx.strokeStyle = "#7C3AED";
-            ctx.globalAlpha = (1 - d/100) * 0.3;
+            ctx.moveTo(x, y);
+            ctx.lineTo(nx, ny);
+            ctx.strokeStyle = `rgba(255,255,255,${0.1 * progress})`;
             ctx.lineWidth = 0.5;
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
             ctx.stroke();
           }
         });
-      });
-      animId = requestAnimationFrame(draw);
+      }
+
+      if (t >= 2 && t < 6) {
+        // PHASE 2: LIQUID SPHERE + RINGS
+        const cx = W / 2, cy = H / 2;
+        const progress = Math.min((t - 2) / 2, 1);
+
+        // Outer glow
+        const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 280 * progress);
+        glow.addColorStop(0, `rgba(124,58,237,${0.3 * progress})`);
+        glow.addColorStop(0.5, `rgba(6,182,212,${0.15 * progress})`);
+        glow.addColorStop(1, "transparent");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, W, H);
+
+        // Sphere surface
+        sphereParticles.forEach(p => {
+          p.theta += p.speed;
+          const r = 100 * progress;
+          const x = cx + r * Math.sin(p.phi) * Math.cos(p.theta + t * 0.3);
+          const y = cy + r * Math.sin(p.phi) * Math.sin(p.theta + t * 0.3) * 0.4;
+          const brightness = (Math.sin(p.theta + t) * 0.5 + 0.5);
+          const grad = ctx.createRadialGradient(x, y, 0, x, y, 4);
+          grad.addColorStop(0, `rgba(200,180,255,${brightness * progress})`);
+          grad.addColorStop(1, `rgba(124,58,237,0)`);
+          ctx.beginPath();
+          ctx.arc(x, y, 3 * brightness, 0, Math.PI * 2);
+          ctx.fillStyle = grad;
+          ctx.fill();
+        });
+
+        // Orbiting rings
+        rings.forEach((ring, i) => {
+          ring.angle += ring.speed;
+          const r = ring.radius * progress;
+          ctx.beginPath();
+          ctx.ellipse(
+            cx, cy,
+            r, r * Math.abs(Math.sin(ring.tilt + t * 0.1 + i)),
+            ring.angle, 0, Math.PI * 2
+          );
+          const ringColor = i % 2 === 0
+            ? `rgba(124,58,237,${0.4 * progress})`
+            : `rgba(6,182,212,${0.4 * progress})`;
+          ctx.strokeStyle = ringColor;
+          ctx.lineWidth = 1.5;
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = i % 2 === 0 ? "#7C3AED" : "#06B6D4";
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        });
+      }
+
+      animRef.current = requestAnimationFrame(draw);
     };
+
     draw();
-    return () => cancelAnimationFrame(animId);
+    return () => cancelAnimationFrame(animRef.current);
   }, []);
 
   // Phase timing
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 1800);
-    const t2 = setTimeout(() => setPhase(2), 2800);
-    const t3 = setTimeout(() => setPhase(3), 3800);
-    const t4 = setTimeout(() => onComplete(), 4600);
+    const t1 = setTimeout(() => setPhase(1), 2000);
+    const t2 = setTimeout(() => setPhase(2), 4000);
+    const t3 = setTimeout(() => setPhase(3), 6000);
+    const t4 = setTimeout(() => onComplete(), 7200);
     return () => [t1,t2,t3,t4].forEach(clearTimeout);
-  }, []);
+  }, [onComplete]);
+
+  const letters = ["S","I","G","M","A","-","G","P","T"];
 
   return (
     <div style={{
-      position:"fixed", inset:0,
-      background:"#0A0A0F",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      zIndex:9999, overflow:"hidden",
+      position:"fixed", inset:0, zIndex:9999,
+      overflow:"hidden", background:"#030308",
       opacity: phase === 3 ? 0 : 1,
-      transition: phase === 3 ? "opacity 0.8s ease" : "none"
+      transition: phase === 3 ? "opacity 1s ease" : "none"
     }}>
-      {/* Particle Canvas */}
       <canvas ref={canvasRef} style={{
-        position:"absolute", inset:0, zIndex:0
+        position:"absolute", inset:0, width:"100%", height:"100%"
       }}/>
 
-      {/* Glowing orbs */}
+      {/* Logo reveal */}
       <div style={{
-        position:"absolute",
-        width:"600px", height:"600px",
-        background:"radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%)",
-        borderRadius:"50%", top:"50%", left:"50%",
-        transform:"translate(-50%,-50%)",
-        animation:"orbPulse 3s ease-in-out infinite"
-      }}/>
-      <div style={{
-        position:"absolute",
-        width:"400px", height:"400px",
-        background:"radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%)",
-        borderRadius:"50%", top:"40%", left:"60%",
-        transform:"translate(-50%,-50%)",
-        animation:"orbPulse 4s ease-in-out infinite reverse"
-      }}/>
-
-      {/* Main Content */}
-      <div style={{
-        position:"relative", zIndex:1,
+        position:"absolute", inset:0, zIndex:1,
         display:"flex", flexDirection:"column",
-        alignItems:"center", gap:"28px",
-        textAlign:"center"
+        alignItems:"center", justifyContent:"center",
+        gap:"20px"
       }}>
         {/* Letters */}
-        <div style={{display:"flex", gap:"4px", perspective:"1000px"}}>
+        <div style={{
+          display:"flex", gap:"2px",
+          perspective:"1200px"
+        }}>
           {letters.map((letter, i) => (
             <span key={i} style={{
               fontFamily:"'Space Grotesk', sans-serif",
-              fontSize:"clamp(52px, 11vw, 130px)",
+              fontSize:"clamp(44px, 10vw, 120px)",
               fontWeight:900,
               background:"linear-gradient(135deg, #7C3AED, #06B6D4)",
               WebkitBackgroundClip:"text",
               WebkitTextFillColor:"transparent",
               backgroundClip:"text",
               display:"inline-block",
-              opacity:0,
-              animation:`letterPunch 0.7s cubic-bezier(0.17,0.89,0.32,1.49) 
-                         ${i * 130}ms forwards`,
+              opacity: phase >= 2 ? 1 : 0,
+              transform: phase >= 2
+                ? "translateZ(0) scale(1) rotateX(0deg)"
+                : "translateZ(-3000px) scale(0) rotateX(90deg)",
+              transition: `all 0.7s cubic-bezier(0.17,0.89,0.32,1.49) 
+                          ${i * 80}ms`,
+              filter: phase >= 2 ? "blur(0)" : "blur(20px)",
+              textShadow: phase >= 2
+                ? "0 0 40px rgba(124,58,237,0.5)" : "none"
             }}>
               {letter}
             </span>
@@ -130,65 +218,37 @@ export default function Intro({ onComplete }) {
         </div>
 
         {/* Subtitle */}
-        <div style={{
+        <p style={{
           fontFamily:"'Inter', sans-serif",
-          fontSize:"clamp(12px, 2vw, 17px)",
-          color:"rgba(255,255,255,0.45)",
-          letterSpacing:"4px",
+          fontSize:"clamp(11px, 2vw, 16px)",
+          color:"rgba(255,255,255,0.4)",
+          letterSpacing:"5px",
           textTransform:"uppercase",
-          opacity: phase >= 1 ? 1 : 0,
-          transform: phase >= 1 ? "translateY(0)" : "translateY(20px)",
-          transition:"all 0.8s ease"
+          opacity: phase >= 2 ? 1 : 0,
+          transform: phase >= 2 ? "translateY(0)" : "translateY(30px)",
+          transition:"all 0.8s ease 0.8s",
+          margin:0
         }}>
           Powered by Groq · Llama 3.3 70B
-        </div>
+        </p>
 
-        {/* Created by */}
-        <div style={{
+        {/* Created by Indra */}
+        <p style={{
           fontFamily:"'Inter', sans-serif",
-          fontSize:"clamp(14px, 2.5vw, 20px)",
-          color:"rgba(255,255,255,0.7)",
+          fontSize:"clamp(13px, 2.5vw, 19px)",
+          color:"rgba(255,255,255,0.6)",
           opacity: phase >= 2 ? 1 : 0,
-          transform: phase >= 2 ? "translateY(0)" : "translateY(15px)",
-          transition:"all 0.8s ease 0.2s",
-          letterSpacing:"1px"
+          transform: phase >= 2 ? "translateY(0)" : "translateY(20px)",
+          transition:"all 0.8s ease 1.2s",
+          margin:0, letterSpacing:"1px"
         }}>
           Created by{" "}
           <span style={{
-            color:"#F59E0B",
-            fontWeight:800,
-            fontSize:"1.25em",
-            textShadow:"0 0 20px rgba(245,158,11,0.8), 0 0 40px rgba(245,158,11,0.4)"
-          }}>
-            Indra
-          </span>
-        </div>
+            color:"#F59E0B", fontWeight:800, fontSize:"1.2em",
+            textShadow:"0 0 30px rgba(245,158,11,0.9)"
+          }}>Indra</span>
+        </p>
       </div>
-
-      <style>{`
-        @keyframes letterPunch {
-          0% { 
-            opacity:0; 
-            transform:translateZ(-3000px) scale(0.01) rotateX(90deg);
-            filter:blur(30px);
-          }
-          60% { 
-            opacity:1; 
-            transform:translateZ(50px) scale(1.2) rotateX(-5deg);
-            filter:blur(0);
-          }
-          80% { transform:translateZ(-15px) scale(0.96); }
-          100% { 
-            opacity:1; 
-            transform:translateZ(0) scale(1) rotateX(0);
-            filter:blur(0);
-          }
-        }
-        @keyframes orbPulse {
-          0%,100% { transform:translate(-50%,-50%) scale(1); opacity:0.8; }
-          50% { transform:translate(-50%,-50%) scale(1.2); opacity:1; }
-        }
-      `}</style>
     </div>
   );
 }

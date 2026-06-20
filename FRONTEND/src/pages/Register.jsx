@@ -6,7 +6,7 @@ import api from "../api";
 
 export default function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", confirmPassword: "" });
+  const [form, setForm] = useState({ fullName: "", username: "", email: "", password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState({});
@@ -32,6 +32,11 @@ export default function Register() {
     if (field === "fullName") {
       if (!value.trim()) return "Full name is required";
       if (value.trim().length < 2) return "Name must be at least 2 characters";
+    }
+    if (field === "username") {
+      if (!value.trim()) return "Username is required";
+      if (value.trim().length < 3) return "Username must be at least 3 characters";
+      if (!/^[a-zA-Z0-9_]+$/.test(value)) return "Username can only contain letters, numbers, and underscores";
     }
     if (field === "email") {
       if (!value.trim()) return "Email is required";
@@ -68,6 +73,7 @@ export default function Register() {
 
   const isValid =
     !validate("fullName", form.fullName) &&
+    !validate("username", form.username) &&
     !validate("email", form.email) &&
     !validate("password", form.password) &&
     !validate("confirmPassword", form.confirmPassword) &&
@@ -77,13 +83,13 @@ export default function Register() {
     e.preventDefault();
     setBannerError("");
 
-    const fields = ["fullName", "email", "password", "confirmPassword"];
+    const fields = ["fullName", "username", "email", "password", "confirmPassword"];
     const newErrors = {};
     fields.forEach((f) => {
       newErrors[f] = validate(f, form[f]);
     });
     setErrors(newErrors);
-    setTouched({ fullName: true, email: true, password: true, confirmPassword: true });
+    setTouched({ fullName: true, username: true, email: true, password: true, confirmPassword: true });
 
     if (Object.values(newErrors).some(Boolean)) return;
     if (!acceptedTerms) {
@@ -93,18 +99,21 @@ export default function Register() {
 
     setLoading(true);
     try {
-      const data = await api.register(form.fullName, form.email, form.password);
-      console.log("[Register] Response received:", { hasToken: !!data.token, username: data.user?.username, keys: Object.keys(data) });
+      const data = await api.register(form.fullName, form.email, form.password, form.username);
       localStorage.setItem("sigma_token", data.token);
       localStorage.setItem("sigma_username", data.user.username);
-      console.log("[Register] Stored — sigma_token:", localStorage.getItem("sigma_token") ? "✅ present" : "❌ MISSING");
-      console.log("[Register] Stored — sigma_username:", localStorage.getItem("sigma_username"));
       navigate("/chat");
     } catch (err) {
       setBannerError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGuestLogin = () => {
+    localStorage.setItem("sigma_username", "Guest");
+    localStorage.removeItem("sigma_token");
+    navigate("/chat");
   };
 
   return (
@@ -135,21 +144,24 @@ export default function Register() {
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                 </span>
-                <input
-                  id="reg-name"
-                  type="text"
-                  className={`auth-input ${errors.fullName && touched.fullName ? "auth-input--error" : ""}`}
-                  placeholder="John Doe"
-                  value={form.fullName}
-                  onChange={(e) => handleChange("fullName", e.target.value)}
-                  onBlur={() => handleBlur("fullName")}
-                  autoComplete="name"
-                  autoFocus
-                />
+                <input id="reg-name" type="text" className={`auth-input ${errors.fullName && touched.fullName ? "auth-input--error" : ""}`} placeholder="John Doe" value={form.fullName} onChange={(e) => handleChange("fullName", e.target.value)} onBlur={() => handleBlur("fullName")} autoComplete="name" autoFocus />
               </div>
-              {errors.fullName && touched.fullName && (
-                <span className="auth-error">✕ {errors.fullName}</span>
-              )}
+              {errors.fullName && touched.fullName && <span className="auth-error">✕ {errors.fullName}</span>}
+            </div>
+
+            {/* Username */}
+            <div className="auth-field">
+              <label className="auth-label" htmlFor="reg-username">Username</label>
+              <div className="auth-input-wrapper">
+                <span className="auth-input-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  </svg>
+                </span>
+                <input id="reg-username" type="text" className={`auth-input ${errors.username && touched.username ? "auth-input--error" : ""}`} placeholder="johndoe" value={form.username} onChange={(e) => handleChange("username", e.target.value)} onBlur={() => handleBlur("username")} autoComplete="username" />
+              </div>
+              {errors.username && touched.username && <span className="auth-error">✕ {errors.username}</span>}
             </div>
 
             {/* Email */}
@@ -162,20 +174,9 @@ export default function Register() {
                     <path d="M22 4L12 13L2 4" />
                   </svg>
                 </span>
-                <input
-                  id="reg-email"
-                  type="email"
-                  className={`auth-input ${errors.email && touched.email ? "auth-input--error" : ""}`}
-                  placeholder="you@example.com"
-                  value={form.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  onBlur={() => handleBlur("email")}
-                  autoComplete="email"
-                />
+                <input id="reg-email" type="email" className={`auth-input ${errors.email && touched.email ? "auth-input--error" : ""}`} placeholder="you@example.com" value={form.email} onChange={(e) => handleChange("email", e.target.value)} onBlur={() => handleBlur("email")} autoComplete="email" />
               </div>
-              {errors.email && touched.email && (
-                <span className="auth-error">✕ {errors.email}</span>
-              )}
+              {errors.email && touched.email && <span className="auth-error">✕ {errors.email}</span>}
             </div>
 
             {/* Password */}
@@ -188,23 +189,8 @@ export default function Register() {
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
                 </span>
-                <input
-                  id="reg-password"
-                  type={showPassword ? "text" : "password"}
-                  className={`auth-input ${errors.password && touched.password ? "auth-input--error" : ""}`}
-                  placeholder="Create a strong password"
-                  value={form.password}
-                  onChange={(e) => handleChange("password", e.target.value)}
-                  onBlur={() => handleBlur("password")}
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  className="auth-password-toggle"
-                  onClick={() => setShowPassword((p) => !p)}
-                  tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
+                <input id="reg-password" type={showPassword ? "text" : "password"} className={`auth-input ${errors.password && touched.password ? "auth-input--error" : ""}`} placeholder="Create a strong password" value={form.password} onChange={(e) => handleChange("password", e.target.value)} onBlur={() => handleBlur("password")} autoComplete="new-password" />
+                <button type="button" className="auth-password-toggle" onClick={() => setShowPassword((p) => !p)} tabIndex={-1} aria-label={showPassword ? "Hide password" : "Show password"}>
                   {showPassword ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
@@ -219,27 +205,16 @@ export default function Register() {
                   )}
                 </button>
               </div>
-              {errors.password && touched.password && (
-                <span className="auth-error">✕ {errors.password}</span>
-              )}
+              {errors.password && touched.password && <span className="auth-error">✕ {errors.password}</span>}
 
               {/* Password Strength Meter */}
               <div className="auth-strength">
                 <div className="auth-strength-bar">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <div
-                      key={i}
-                      className={`auth-strength-segment ${
-                        i <= strength.score ? `auth-strength-segment--${strength.level}` : ""
-                      }`}
-                    />
+                    <div key={i} className={`auth-strength-segment ${i <= strength.score ? `auth-strength-segment--${strength.level}` : ""}`} />
                   ))}
                 </div>
-                {form.password && (
-                  <div className={`auth-strength-label auth-strength-label--${strength.level}`}>
-                    {strength.label}
-                  </div>
-                )}
+                {form.password && <div className={`auth-strength-label auth-strength-label--${strength.level}`}>{strength.label}</div>}
               </div>
             </div>
 
@@ -252,41 +227,30 @@ export default function Register() {
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
                 </span>
-                <input
-                  id="reg-confirm"
-                  type={showPassword ? "text" : "password"}
-                  className={`auth-input ${errors.confirmPassword && touched.confirmPassword ? "auth-input--error" : ""}`}
-                  placeholder="Re-enter your password"
-                  value={form.confirmPassword}
-                  onChange={(e) => handleChange("confirmPassword", e.target.value)}
-                  onBlur={() => handleBlur("confirmPassword")}
-                  autoComplete="new-password"
-                />
+                <input id="reg-confirm" type={showPassword ? "text" : "password"} className={`auth-input ${errors.confirmPassword && touched.confirmPassword ? "auth-input--error" : ""}`} placeholder="Re-enter your password" value={form.confirmPassword} onChange={(e) => handleChange("confirmPassword", e.target.value)} onBlur={() => handleBlur("confirmPassword")} autoComplete="new-password" />
               </div>
-              {errors.confirmPassword && touched.confirmPassword && (
-                <span className="auth-error">✕ {errors.confirmPassword}</span>
-              )}
+              {errors.confirmPassword && touched.confirmPassword && <span className="auth-error">✕ {errors.confirmPassword}</span>}
             </div>
 
             {/* Terms Checkbox */}
             <label className="auth-checkbox">
-              <input
-                type="checkbox"
-                checked={acceptedTerms}
-                onChange={(e) => setAcceptedTerms(e.target.checked)}
-              />
+              <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} />
               <span>I agree to the <Link to="/terms">Terms of Service</Link></span>
             </label>
 
             {/* Submit */}
             <button type="submit" className="auth-btn" disabled={loading || !isValid}>
-              <span className="auth-btn-text">
-                {loading ? "Creating account..." : "Create Account"}
-              </span>
+              <span className="auth-btn-text">{loading ? "Creating account..." : "Create Account"}</span>
             </button>
           </form>
 
-          {/* Footer */}
+          {/* Guest Link */}
+          <div className="guest-link">
+            <button type="button" className="auth-guest-link-btn" onClick={handleGuestLogin}>
+              Continue as Guest <span>→</span>
+            </button>
+          </div>
+
           <p className="auth-footer">
             Already have an account? <Link to="/login">Sign In</Link>
           </p>
