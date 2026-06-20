@@ -23,7 +23,9 @@ export default function Chat({ username, onLogout }) {
   const [attachedFile, setAttachedFile] = useState(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showWaveform, setShowWaveform] = useState(false);
-  const bottomRef = useRef(null);
+  const [userScrolled, setUserScrolled] = useState(false);
+  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
   const pdfInputRef = useRef(null);
   const textareaRef = useRef(null);
@@ -66,7 +68,20 @@ export default function Chat({ username, onLogout }) {
     loadChats();
   }, [backendStatus]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [activeChat?.messages]);
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const isAtBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    setUserScrolled(!isAtBottom);
+  }, []);
+
+  // Only auto-scroll if user hasn't scrolled up
+  useEffect(() => {
+    if (!userScrolled) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [activeChat?.messages, userScrolled]);
 
   useEffect(() => {
     const ta = textareaRef.current;
@@ -213,7 +228,21 @@ export default function Chat({ username, onLogout }) {
           <span className="mobile-header-title">SIGMA GPT</span>
           <button className="mobile-header-new-btn" onClick={addNewChat} aria-label="New chat"><FiPlus size={16} /></button>
         </div>
-        <div className="messages-container">
+        {/* Desktop Header */}
+        <div className="chat-header">
+          <div className="chat-header-left">
+            <span className="chat-header-logo">SIGMA GPT</span>
+            <span className="chat-header-model">Groq · Llama 3.3 70B</span>
+          </div>
+          <div className="chat-header-right">
+            <span className="chat-header-user">{username}</span>
+          </div>
+        </div>
+        <div
+          className="messages-container"
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+        >
           <div className="messages-inner">
             {msgs.length === 0 ? (
               <div className="empty-state">
@@ -231,7 +260,7 @@ export default function Chat({ username, onLogout }) {
                 <ChatMessage key={i} msg={msg} username={username} isStreaming={i === msgs.length - 1 && isStreaming} />
               ))
             )}
-            <div ref={bottomRef} />
+            <div ref={messagesEndRef} />
           </div>
         </div>
         <div className="composer-wrapper">

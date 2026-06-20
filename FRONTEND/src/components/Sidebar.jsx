@@ -94,6 +94,9 @@ export default function Sidebar({
         />
       </div>
 
+      {/* Section Label */}
+      <div className="sidebar-section-label">Recent</div>
+
       {/* Chat List */}
       <div className="sidebar-chat-list">
         {sortedChats.length === 0 ? (
