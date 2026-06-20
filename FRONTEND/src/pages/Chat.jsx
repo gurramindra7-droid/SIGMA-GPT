@@ -11,6 +11,272 @@ function newChat() {
   return { id: "new-" + Date.now(), title: "New Chat", messages: [], backendId: null };
 }
 
+/* ─── Welcome Screen: 3D Mountain Animation ─── */
+function WelcomeScreen({ username, onSuggestion }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let W = canvas.width = canvas.offsetWidth;
+    let H = canvas.height = canvas.offsetHeight;
+    let t = 0;
+    let animId;
+
+    // Mountain layers
+    const generateMountain = (seed, points) => {
+      const pts = [];
+      for (let i = 0; i <= points; i++) {
+        const x = (i / points) * W;
+        const noise = Math.sin(i * seed * 0.3) * 60 +
+                      Math.sin(i * seed * 0.7) * 30 +
+                      Math.sin(i * seed * 1.3) * 15;
+        pts.push({ x, y: H * 0.65 + noise });
+      }
+      return pts;
+    };
+
+    const mountains = [
+      { pts: generateMountain(0.4, 20), color: "rgba(0,80,40,0.9)", speed: 0.0003 },
+      { pts: generateMountain(0.7, 15), color: "rgba(0,60,30,0.8)", speed: 0.0005 },
+      { pts: generateMountain(1.1, 12), color: "rgba(0,40,20,0.7)", speed: 0.0008 },
+      { pts: generateMountain(1.5, 10), color: "rgba(0,30,15,0.6)", speed: 0.001 },
+    ];
+
+    // Stars
+    const stars = Array.from({length: 150}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H * 0.6,
+      size: Math.random() * 1.5 + 0.3,
+      twinkle: Math.random() * Math.PI * 2,
+      speed: 0.5 + Math.random() * 2
+    }));
+
+    // Floating particles (green energy)
+    const particles = Array.from({length: 40}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: -Math.random() * 0.5 - 0.1,
+      size: Math.random() * 2 + 0.5,
+      opacity: Math.random() * 0.6 + 0.2,
+      life: Math.random()
+    }));
+
+    const drawMountain = (pts, color, offset) => {
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+      const shifted = pts.map((p, i) => ({
+        x: p.x,
+        y: p.y + Math.sin(t * offset + i * 0.5) * 8
+      }));
+      shifted.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.lineTo(W, H);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+    };
+
+    const draw = () => {
+      t += 0.016;
+      ctx.clearRect(0, 0, W, H);
+
+      // Sky gradient
+      const sky = ctx.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, "#020408");
+      sky.addColorStop(0.4, "#050A0F");
+      sky.addColorStop(0.7, "#071210");
+      sky.addColorStop(1, "#050508");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, W, H);
+
+      // Horizon glow (green aurora)
+      const aurora = ctx.createLinearGradient(0, H*0.3, 0, H*0.7);
+      aurora.addColorStop(0, "transparent");
+      aurora.addColorStop(0.5, "rgba(0,255,136,0.04)");
+      aurora.addColorStop(1, "transparent");
+      ctx.fillStyle = aurora;
+      ctx.fillRect(0, 0, W, H);
+
+      // Stars
+      stars.forEach(s => {
+        const tw = 0.3 + 0.7 * Math.sin(s.twinkle + t * s.speed);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,255,220,${tw * 0.9})`;
+        ctx.fill();
+      });
+
+      // Moon/light source
+      const moonX = W * 0.75, moonY = H * 0.18;
+      const moonGlow = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, 120);
+      moonGlow.addColorStop(0, "rgba(0,255,136,0.12)");
+      moonGlow.addColorStop(0.3, "rgba(0,212,170,0.06)");
+      moonGlow.addColorStop(1, "transparent");
+      ctx.fillStyle = moonGlow;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, 28, 0, Math.PI * 2);
+      const moonGrad = ctx.createRadialGradient(moonX-5, moonY-5, 2, moonX, moonY, 28);
+      moonGrad.addColorStop(0, "rgba(180,255,220,0.9)");
+      moonGrad.addColorStop(1, "rgba(0,255,136,0.6)");
+      ctx.fillStyle = moonGrad;
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = "#00FF88";
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Mountains back to front
+      [...mountains].reverse().forEach((m, i) => {
+        drawMountain(m.pts, m.color, m.speed * 1000);
+      });
+
+      // Floating particles
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        p.life += 0.003;
+        if (p.y < 0 || p.life > 1) {
+          p.x = Math.random() * W;
+          p.y = H; p.life = 0;
+        }
+        const alpha = Math.sin(p.life * Math.PI) * p.opacity;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,255,136,${alpha})`;
+        ctx.fill();
+      });
+
+      animId = requestAnimationFrame(draw);
+    };
+
+    draw();
+    const ro = new ResizeObserver(() => {
+      W = canvas.width = canvas.offsetWidth;
+      H = canvas.height = canvas.offsetHeight;
+    });
+    ro.observe(canvas);
+    return () => { cancelAnimationFrame(animId); ro.disconnect(); };
+  }, []);
+
+  const suggestions = [
+    "Explain quantum computing simply",
+    "Write a Python script to analyze CSV data",
+    "Help me debug a React component",
+    "Create a workout plan for beginners"
+  ];
+
+  return (
+    <div style={{
+      position:"relative", flex:1,
+      display:"flex", flexDirection:"column",
+      alignItems:"center", justifyContent:"center",
+      overflow:"hidden", minHeight:0
+    }}>
+      {/* Mountain canvas background */}
+      <canvas ref={canvasRef} style={{
+        position:"absolute", inset:0,
+        width:"100%", height:"100%"
+      }}/>
+
+      {/* Content overlay */}
+      <div style={{
+        position:"relative", zIndex:1,
+        display:"flex", flexDirection:"column",
+        alignItems:"center", gap:"16px",
+        padding:"0 24px", textAlign:"center",
+        width:"100%", maxWidth:"600px"
+      }}>
+        {/* SIGMA-GPT title */}
+        <div>
+          <h1 style={{
+            fontFamily:"'Space Grotesk', sans-serif",
+            fontSize:"clamp(32px, 6vw, 64px)",
+            fontWeight:900, margin:0,
+            background:"linear-gradient(135deg, #00FF88 0%, #0EA5E9 50%, #00D4AA 100%)",
+            WebkitBackgroundClip:"text",
+            WebkitTextFillColor:"transparent",
+            backgroundClip:"text",
+            textShadow:"none",
+            letterSpacing:"-1px",
+            filter:"drop-shadow(0 0 30px rgba(0,255,136,0.3))"
+          }}>
+            SIGMA GPT
+          </h1>
+          <p style={{
+            margin:"8px 0 0",
+            fontSize:"13px",
+            color:"#2D6A4F",
+            letterSpacing:"3px",
+            textTransform:"uppercase",
+            fontFamily:"'Inter', sans-serif"
+          }}>
+            Built by <span style={{
+              color:"#00FF88",
+              fontWeight:700,
+              textShadow:"0 0 15px rgba(0,255,136,0.6)"
+            }}>Indra</span>
+            {" · "}Groq · Llama 3.3 70B
+          </p>
+        </div>
+
+        {/* Greeting */}
+        <p style={{
+          fontFamily:"'Inter', sans-serif",
+          fontSize:"clamp(16px, 3vw, 22px)",
+          color:"rgba(240,255,244,0.85)",
+          margin:"4px 0 0",
+          fontWeight:500
+        }}>
+          How can I help you today,{" "}
+          <span style={{
+            color:"#00FF88",
+            fontWeight:700
+          }}>{username || "there"}</span>?
+        </p>
+
+        {/* Suggestion chips */}
+        <div style={{
+          display:"flex", flexWrap:"wrap",
+          gap:"10px", justifyContent:"center",
+          marginTop:"8px"
+        }}>
+          {suggestions.map((s, i) => (
+            <button key={i}
+              onClick={() => onSuggestion(s)}
+              style={{
+                background:"rgba(0,255,136,0.04)",
+                border:"1px solid rgba(0,255,136,0.12)",
+                borderRadius:"24px",
+                padding:"10px 18px",
+                color:"#4A7C59",
+                fontSize:"13px",
+                cursor:"pointer",
+                fontFamily:"'Inter', sans-serif",
+                transition:"all 0.2s ease",
+                backdropFilter:"blur(10px)"
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(0,255,136,0.1)";
+                e.currentTarget.style.borderColor = "rgba(0,255,136,0.3)";
+                e.currentTarget.style.color = "#00FF88";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(0,255,136,0.04)";
+                e.currentTarget.style.borderColor = "rgba(0,255,136,0.12)";
+                e.currentTarget.style.color = "#4A7C59";
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Chat({ username, onLogout }) {
   const [chats, setChats] = useState([newChat()]);
   const [activeChatId, setActiveChatId] = useState(chats[0].id);
@@ -51,7 +317,7 @@ export default function Chat({ username, onLogout }) {
 
   useEffect(() => {
     if (backendStatus !== 'ready') return;
-    if (isGuest) return; // Guest users don't load from backend
+    if (isGuest) return;
     const loadChats = async () => {
       try {
         const token = localStorage.getItem('sigma_token');
@@ -91,8 +357,8 @@ export default function Chat({ username, onLogout }) {
 
   const updateChat = (id, updater) => { setChats((prev) => prev.map((c) => (c.id === id ? updater(c) : c))); };
 
-  const sendMessage = async () => {
-    const text = (input || "").trim();
+  const sendMessage = async (textOverride) => {
+    const text = (textOverride || input || "").trim();
     const hasAttachment = !!attachedFile;
     if ((!text && !hasAttachment) || loading || uploadingFile) return;
     const messageText = text || (attachedFile ? attachedFile.name : '');
@@ -193,8 +459,6 @@ export default function Chat({ username, onLogout }) {
     else { startListening(); setShowWaveform(true); }
   };
 
-  const suggestions = ["Explain quantum computing simply", "Write a Python script to analyze CSV data", "Help me debug a React component", "Create a workout plan for beginners"];
-
   if (backendStatus === "connecting" && !isGuest) {
     return (
       <div className="cold-start-screen">
@@ -246,36 +510,33 @@ export default function Chat({ username, onLogout }) {
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="messages-container" ref={chatBoxRef} onScroll={handleScroll}>
-          <div className="messages-inner">
-            {/* Guest banner */}
-            {isGuest && (
-              <div className="guest-banner">
-                <span>👤 You are in Guest mode — </span>
-                <span onClick={() => window.location.href='/register'} className="guest-banner-link">Sign up for full access</span>
-              </div>
-            )}
-
-            {msgs.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-logo">SIGMA GPT</div>
-                <h2>How can I help you, {username}?</h2>
-                <p>Ask me anything — code, writing, analysis, and more</p>
-                <div className="empty-state-suggestions">
-                  {suggestions.map((s, i) => (
-                    <button key={i} className="empty-state-suggestion" onClick={() => { setInput(s); textareaRef.current?.focus(); }}>{s}</button>
-                  ))}
+        {/* Messages or Welcome Screen */}
+        {msgs.length === 0 ? (
+          <WelcomeScreen
+            username={username}
+            onSuggestion={(text) => {
+              setInput(text);
+              setTimeout(() => sendMessage(text), 100);
+            }}
+          />
+        ) : (
+          <div className="messages-container" ref={chatBoxRef} onScroll={handleScroll}>
+            <div className="messages-inner">
+              {/* Guest banner */}
+              {isGuest && (
+                <div className="guest-banner">
+                  <span>👤 You are in Guest mode — </span>
+                  <span onClick={() => window.location.href='/register'} className="guest-banner-link">Sign up for full access</span>
                 </div>
-              </div>
-            ) : (
-              msgs.map((msg, i) => (
+              )}
+
+              {msgs.map((msg, i) => (
                 <ChatMessage key={i} msg={msg} username={username} isStreaming={i === msgs.length - 1 && isStreaming} />
-              ))
-            )}
-            <div ref={messagesEndRef} />
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Composer */}
         <div className="composer-wrapper">
@@ -310,7 +571,7 @@ export default function Chat({ username, onLogout }) {
                     <button onClick={() => pdfInputRef.current?.click()} disabled={loading || uploadingFile} className="composer-btn" title="Upload PDF" aria-label="Upload PDF"><FiFile size={16} /></button>
                   </>
                 )}
-                <button onClick={sendMessage} disabled={loading || uploadingFile || (!(input || "").trim() && !attachedFile)} className="composer-btn send" title="Send message" aria-label="Send message">
+                <button onClick={() => sendMessage()} disabled={loading || uploadingFile || (!(input || "").trim() && !attachedFile)} className="composer-btn send" title="Send message" aria-label="Send message">
                   <FiSend size={16} />
                 </button>
               </div>
