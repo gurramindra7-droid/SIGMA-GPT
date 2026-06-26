@@ -18,8 +18,8 @@ html {
 }
 
 body {
-  background: #0a0a0f;
-  color: #f1f1f7;
+  background: #050508;
+  color: #F0FFF4;
   min-height: 100dvh;
   overflow: hidden;
 }
@@ -31,7 +31,7 @@ body {
 
 /* ---- Focus Styles for Accessibility ---- */
 :focus-visible {
-  outline: 2px solid #7c3aed;
+  outline: 2px solid #00FF88;
   outline-offset: 2px;
   border-radius: 4px;
 }

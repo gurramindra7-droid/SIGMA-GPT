@@ -1,18 +1,19 @@
 /* ============================================================
    SIGMA-GPT — Auth Pages Styles
-   Dark luxury theme · Glassmorphism · Animated orbs
+   CYBER ENERGY THEME · Green · Teal · Blue
    ============================================================ */
 
 /* ---- CSS Custom Properties ---- */
 :root {
-  --bg-base: #0a0a0f;
-  --bg-surface: rgba(255, 255, 255, 0.04);
-  --accent-violet: #7c3aed;
-  --accent-cyan: #06b6d4;
-  --text-primary: #f8f8ff;
-  --text-muted: #6b7280;
-  --border: rgba(255, 255, 255, 0.08);
-  --glow: rgba(124, 58, 237, 0.4);
+  --bg-base: #050508;
+  --bg-surface: rgba(0, 255, 136, 0.04);
+  --accent-green: #00FF88;
+  --accent-teal: #00D4AA;
+  --accent-blue: #0EA5E9;
+  --text-primary: #F0FFF4;
+  --text-muted: #4A7C59;
+  --border: rgba(0, 255, 136, 0.08);
+  --glow: rgba(0, 255, 136, 0.3);
   --error: #ef4444;
   --success: #22c55e;
   --card-radius: 20px;
@@ -59,28 +60,28 @@
   will-change: transform;
 }
 
-.auth-orb--violet {
+.auth-orb--green {
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.6), transparent 70%);
+  background: radial-gradient(circle, rgba(0, 255, 136, 0.4), transparent 70%);
   top: -10%;
   left: -8%;
-  animation: orbFloatViolet 12s ease-in-out infinite alternate;
+  animation: orbFloatGreen 12s ease-in-out infinite alternate;
 }
 
-.auth-orb--cyan {
+.auth-orb--blue {
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.5), transparent 70%);
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.4), transparent 70%);
   bottom: -12%;
   right: -8%;
-  animation: orbFloatCyan 15s ease-in-out infinite alternate;
+  animation: orbFloatBlue 15s ease-in-out infinite alternate;
 }
 
 .auth-orb--small {
   width: 250px;
   height: 250px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.3), transparent 70%);
+  background: radial-gradient(circle, rgba(0, 212, 170, 0.3), transparent 70%);
   top: 50%;
   left: 60%;
   animation: orbPulse 8s ease-in-out infinite alternate;
@@ -173,7 +174,7 @@
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan));
+  background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -229,7 +230,7 @@
 }
 
 .auth-input-wrapper:focus-within .auth-input-icon {
-  color: var(--accent-violet);
+  color: var(--accent-green);
 }
 
 /* ---- Input Fields ---- */
@@ -257,10 +258,10 @@
 }
 
 .auth-input:focus {
-  border-color: var(--accent-violet);
+  border-color: var(--accent-green);
   box-shadow:
-    0 0 0 3px rgba(124, 58, 237, 0.15),
-    0 0 20px rgba(124, 58, 237, 0.08);
+    0 0 0 3px rgba(0, 255, 136, 0.15),
+    0 0 20px rgba(0, 255, 136, 0.08);
 }
 
 .auth-input--error {
@@ -305,7 +306,7 @@
 }
 
 .auth-forgot a:hover {
-  color: var(--accent-violet);
+  color: var(--accent-green);
 }
 
 /* ---- Error Message ---- */
@@ -336,11 +337,11 @@
   padding: 14px 24px;
   border: none;
   border-radius: var(--input-radius);
-  background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan));
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+  color: #050508;
   font-family: "Inter", sans-serif;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition:
     opacity var(--transition-fast),
@@ -354,7 +355,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
   opacity: 0;
   transition: opacity var(--transition-fast);
   border-radius: inherit;
@@ -364,8 +365,8 @@
   opacity: 0.92;
   transform: translateY(-2px);
   box-shadow:
-    0 4px 24px rgba(124, 58, 237, 0.35),
-    0 0 60px rgba(124, 58, 237, 0.15);
+    0 4px 24px rgba(0, 255, 136, 0.35),
+    0 0 60px rgba(0, 255, 136, 0.15);
 }
 
 .auth-btn:hover:not(:disabled)::before {
@@ -439,14 +440,14 @@
 }
 
 .auth-footer a {
-  color: var(--accent-cyan);
+  color: var(--accent-blue);
   text-decoration: none;
   font-weight: 500;
   transition: color var(--transition-fast);
 }
 
 .auth-footer a:hover {
-  color: var(--accent-violet);
+  color: var(--accent-green);
   text-decoration: underline;
 }
 
@@ -483,7 +484,7 @@
 }
 
 .auth-strength-segment--very-strong {
-  background: #06b6d4;
+  background: #0EA5E9;
 }
 
 .auth-strength-label {
@@ -506,7 +507,7 @@
 }
 
 .auth-strength-label--very-strong {
-  color: #06b6d4;
+  color: #0EA5E9;
 }
 
 /* ---- Checkbox ---- */
@@ -539,7 +540,7 @@
 }
 
 .auth-checkbox input[type="checkbox"]:checked {
-  background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan));
+  background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
   border-color: transparent;
   position: relative;
 }
@@ -552,7 +553,7 @@
 }
 
 .auth-checkbox a {
-  color: var(--accent-cyan);
+  color: var(--accent-blue);
   text-decoration: none;
 }
 
@@ -647,7 +648,7 @@
 }
 
 .auth-guest-link-btn:hover {
-  color: var(--accent-violet);
+  color: var(--accent-green);
   text-decoration: underline;
 }
 
@@ -670,6 +671,10 @@
 }
 
 .auth-page::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 255, 136, 0.2);
   border-radius: 3px;
+}
+
+.auth-page::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 136, 0.4);
 }

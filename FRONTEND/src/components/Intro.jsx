@@ -51,8 +51,8 @@ export default function Intro({ onComplete }) {
 
       // Background gradient
       const bg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W*0.7);
-      bg.addColorStop(0, "#0D0D1A");
-      bg.addColorStop(1, "#030308");
+      bg.addColorStop(0, "#071210");
+      bg.addColorStop(1, "#050508");
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
@@ -76,8 +76,8 @@ export default function Intro({ onComplete }) {
           const z = Math.sin(a) * 0.5 + 0.5;
 
           const color = p.strand === 0
-            ? `rgba(124,58,237,${z * 0.9 * progress})`
-            : `rgba(6,182,212,${z * 0.9 * progress})`;
+            ? `rgba(0,255,136,${z * 0.9 * progress})`
+            : `rgba(14,165,233,${z * 0.9 * progress})`;
 
           ctx.beginPath();
           ctx.arc(x, y, p.size * z, 0, Math.PI * 2);
@@ -107,8 +107,8 @@ export default function Intro({ onComplete }) {
 
         // Outer glow
         const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 280 * progress);
-        glow.addColorStop(0, `rgba(124,58,237,${0.3 * progress})`);
-        glow.addColorStop(0.5, `rgba(6,182,212,${0.15 * progress})`);
+        glow.addColorStop(0, `rgba(0,255,136,${0.3 * progress})`);
+        glow.addColorStop(0.5, `rgba(14,165,233,${0.15 * progress})`);
         glow.addColorStop(1, "transparent");
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, W, H);
@@ -121,8 +121,8 @@ export default function Intro({ onComplete }) {
           const y = cy + r * Math.sin(p.phi) * Math.sin(p.theta + t * 0.3) * 0.4;
           const brightness = (Math.sin(p.theta + t) * 0.5 + 0.5);
           const grad = ctx.createRadialGradient(x, y, 0, x, y, 4);
-          grad.addColorStop(0, `rgba(200,180,255,${brightness * progress})`);
-          grad.addColorStop(1, `rgba(124,58,237,0)`);
+          grad.addColorStop(0, `rgba(200,255,220,${brightness * progress})`);
+          grad.addColorStop(1, `rgba(0,255,136,0)`);
           ctx.beginPath();
           ctx.arc(x, y, 3 * brightness, 0, Math.PI * 2);
           ctx.fillStyle = grad;
@@ -140,12 +140,12 @@ export default function Intro({ onComplete }) {
             ring.angle, 0, Math.PI * 2
           );
           const ringColor = i % 2 === 0
-            ? `rgba(124,58,237,${0.4 * progress})`
-            : `rgba(6,182,212,${0.4 * progress})`;
+            ? `rgba(0,255,136,${0.4 * progress})`
+            : `rgba(14,165,233,${0.4 * progress})`;
           ctx.strokeStyle = ringColor;
           ctx.lineWidth = 1.5;
           ctx.shadowBlur = 15;
-          ctx.shadowColor = i % 2 === 0 ? "#7C3AED" : "#06B6D4";
+          ctx.shadowColor = i % 2 === 0 ? "#00FF88" : "#0EA5E9";
           ctx.stroke();
           ctx.shadowBlur = 0;
         });
@@ -197,7 +197,7 @@ export default function Intro({ onComplete }) {
               fontFamily:"'Space Grotesk', sans-serif",
               fontSize:"clamp(44px, 10vw, 120px)",
               fontWeight:900,
-              background:"linear-gradient(135deg, #7C3AED, #06B6D4)",
+              background:"linear-gradient(135deg, #00FF88, #0EA5E9)",
               WebkitBackgroundClip:"text",
               WebkitTextFillColor:"transparent",
               backgroundClip:"text",
@@ -210,7 +210,7 @@ export default function Intro({ onComplete }) {
                           ${i * 80}ms`,
               filter: phase >= 2 ? "blur(0)" : "blur(20px)",
               textShadow: phase >= 2
-                ? "0 0 40px rgba(124,58,237,0.5)" : "none"
+                ? "0 0 40px rgba(0,255,136,0.5)" : "none"
             }}>
               {letter}
             </span>
@@ -236,7 +236,7 @@ export default function Intro({ onComplete }) {
         <p style={{
           fontFamily:"'Inter', sans-serif",
           fontSize:"clamp(13px, 2.5vw, 19px)",
-          color:"rgba(255,255,255,0.6)",
+          color:"rgba(240,255,244,0.6)",
           opacity: phase >= 2 ? 1 : 0,
           transform: phase >= 2 ? "translateY(0)" : "translateY(20px)",
           transition:"all 0.8s ease 1.2s",
@@ -244,8 +244,8 @@ export default function Intro({ onComplete }) {
         }}>
           Created by{" "}
           <span style={{
-            color:"#F59E0B", fontWeight:800, fontSize:"1.2em",
-            textShadow:"0 0 30px rgba(245,158,11,0.9)"
+            color:"#00FF88", fontWeight:800, fontSize:"1.2em",
+            textShadow:"0 0 30px rgba(0,255,136,0.9)"
           }}>Indra</span>
         </p>
       </div>

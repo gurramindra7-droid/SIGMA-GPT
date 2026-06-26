@@ -71,8 +71,8 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-bg">
-        <div className="auth-orb auth-orb--violet" />
-        <div className="auth-orb auth-orb--cyan" />
+        <div className="auth-orb auth-orb--green" />
+        <div className="auth-orb auth-orb--blue" />
         <div className="auth-orb auth-orb--small" />
       </div>
       <div className="auth-wrapper">
