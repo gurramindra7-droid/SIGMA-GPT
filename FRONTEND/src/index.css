@@ -1,7 +1,75 @@
 @import "tailwindcss";
 @import "./styles/chat.css";
 
-/* ---- Base Styles ---- */
+/* ============================================================
+   SIGMA-GPT — Global Design System
+   Deep Navy  →  Tech Blue  →  Soft Blue
+   ============================================================ */
+
+:root {
+  /* ── Deep Navy foundation ─────────────────────────────── */
+  --sigma-navy: #071426;
+  --sigma-navy-deep: #050D1A;
+  --sigma-navy-light: #0A1F36;
+  --sigma-navy-raised: #0D2440;
+
+  /* ── Tech Blue accents ────────────────────────────────── */
+  --sigma-blue: #2388FF;
+  --sigma-blue-bright: #3B9BFF;
+  --sigma-blue-dark: #1677FF;
+
+  /* ── Soft Blue tints ──────────────────────────────────── */
+  --sigma-soft: #B8DAFF;
+  --sigma-soft-mid: #8EC5FF;
+  --sigma-soft-pale: #D5EAFF;
+
+  /* ── Text ─────────────────────────────────────────────── */
+  --sigma-text: #EAF2FC;
+  --sigma-text-secondary: #A9C4E4;
+  --sigma-text-muted: #6E8BB0;
+
+  /* ── Surfaces & borders ───────────────────────────────── */
+  --sigma-border: rgba(142, 197, 255, 0.14);
+  --sigma-border-strong: rgba(142, 197, 255, 0.28);
+  --sigma-surface: rgba(8, 26, 46, 0.82);
+  --sigma-surface-solid: #0A1F36;
+  --sigma-glass: rgba(10, 31, 54, 0.55);
+
+  /* ── Glows ────────────────────────────────────────────── */
+  --sigma-glow: rgba(35, 136, 255, 0.35);
+  --sigma-glow-soft: rgba(35, 136, 255, 0.16);
+
+  /* ── Status ───────────────────────────────────────────── */
+  --sigma-error: #F87171;
+  --sigma-warning: #FBBF24;
+  --sigma-success: #34D399;
+
+  /* ── Typography ───────────────────────────────────────── */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* ── Spacing scale (4/8/12/16/24/32/48) ───────────────── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+
+  /* ── Radii (sophisticated, not cartoonish) ────────────── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* ── Motion ───────────────────────────────────────────── */
+  --t-fast: 150ms ease;
+  --t-normal: 250ms ease;
+}
+
+/* ---- Base ---- */
 *,
 *::before,
 *::after {
@@ -11,15 +79,16 @@
 }
 
 html {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  color-scheme: dark;
 }
 
 body {
-  background: #050508;
-  color: #F0FFF4;
+  background: var(--sigma-navy-deep);
+  color: var(--sigma-text);
   min-height: 100dvh;
   overflow: hidden;
 }
@@ -29,9 +98,9 @@ body {
   overflow: hidden;
 }
 
-/* ---- Focus Styles for Accessibility ---- */
+/* ---- Focus styles ---- */
 :focus-visible {
-  outline: 2px solid #00FF88;
+  outline: 2px solid var(--sigma-blue);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -40,7 +109,13 @@ button:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* ---- Reduced Motion ---- */
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(142, 197, 255, 0.18); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(142, 197, 255, 0.35); }
+
+/* ---- Reduced motion ---- */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

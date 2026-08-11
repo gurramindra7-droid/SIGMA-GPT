@@ -1,3 +1,447 @@
-/* Intro styles - kept minimal since the new intro uses inline styles */
-/* All keyframes are injected via <style> tag in Intro.jsx */
-/* This file is kept for any future CSS additions */
+/* ============================================================
+   SIGMA-GPT — Cinematic 3D Intro Styles
+   Dark · Charcoal · Deep Blue · Subtle Cyan/White
+   ============================================================ */
+
+.cinematic-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+  background: #04060c;
+  color: #EAF2FC;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: opacity 0.65s ease;
+}
+
+.cinematic-intro.ci-exiting {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- 3D / fallback backdrop ---- */
+.ci-canvas-host {
+  position: absolute;
+  inset: 0;
+}
+
+.ci-canvas-host canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Static background (reduced-motion path) */
+.ci-static-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 42%, rgba(23, 52, 96, 0.55), transparent 70%),
+    radial-gradient(ellipse 40% 30% at 28% 22%, rgba(30, 64, 120, 0.32), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 74% 68%, rgba(14, 116, 144, 0.22), transparent 70%),
+    #04060c;
+}
+
+/* ---- CSS fallback (no WebGL) ---- */
+.ci-fallback {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%, rgba(23, 52, 96, 0.5), transparent 70%),
+    radial-gradient(ellipse 35% 30% at 25% 20%, rgba(30, 64, 120, 0.3), transparent 70%),
+    #04060c;
+}
+
+.ci-fallback-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.35;
+  will-change: transform;
+}
+
+.ci-fallback-orb--a {
+  width: 46vmin;
+  height: 46vmin;
+  left: 8%;
+  top: 14%;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.5), transparent 70%);
+  animation: ciOrbFloat 16s ease-in-out infinite alternate;
+}
+
+.ci-fallback-orb--b {
+  width: 40vmin;
+  height: 40vmin;
+  right: 6%;
+  bottom: 10%;
+  background: radial-gradient(circle, rgba(22, 119, 255, 0.4), transparent 70%);
+  animation: ciOrbFloat 20s ease-in-out infinite alternate-reverse;
+}
+
+.ci-fallback-orb--c {
+  width: 26vmin;
+  height: 26vmin;
+  left: 58%;
+  top: 55%;
+  background: radial-gradient(circle, rgba(142, 197, 255, 0.3), transparent 70%);
+  animation: ciOrbPulse 9s ease-in-out infinite alternate;
+}
+
+@keyframes ciOrbFloat {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(5vmin, -4vmin) scale(1.12); }
+}
+
+@keyframes ciOrbPulse {
+  0% { opacity: 0.2; transform: scale(0.85); }
+  100% { opacity: 0.45; transform: scale(1.15); }
+}
+
+.ci-fallback-particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: ciParticleFloat linear infinite;
+  opacity: 0;
+}
+
+@keyframes ciParticleFloat {
+  0% { opacity: 0; transform: translateY(0); }
+  12% { opacity: 0.7; }
+  50% { opacity: 0.25; }
+  88% { opacity: 0.7; }
+  100% { opacity: 0; transform: translateY(-14vmin); }
+}
+
+/* ---- Cinematic grade ---- */
+.ci-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 42%, rgba(0, 0, 0, 0.58) 100%);
+}
+
+.ci-letterbox {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  height: max(26px, 4.2vh);
+  background: #000;
+  transition: transform 1.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+  pointer-events: none;
+}
+
+.ci-letterbox--top { top: 0; transform-origin: top; }
+.ci-letterbox--bottom { bottom: 0; transform-origin: bottom; }
+.ci-letterbox--open { transform: scaleY(0); }
+
+/* ---- Skip Intro ---- */
+.ci-skip {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 12, 22, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(234, 242, 252, 0.72);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  opacity: 0;
+  animation: ciFadeIn 0.7s ease 0.9s forwards;
+  transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
+}
+
+.ci-skip span { transition: transform 0.25s ease; }
+.ci-skip:hover { border-color: rgba(142, 197, 255, 0.65); color: #B8DAFF; background: rgba(30, 64, 120, 0.35); }
+.ci-skip:hover span { transform: translateX(3px); }
+
+@keyframes ciFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ---- Center stage ---- */
+.ci-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Boot marker */
+.ci-boot {
+  margin: 0 0 0;
+  font-size: clamp(10px, 1.6vw, 13px);
+  font-weight: 600;
+  letter-spacing: 7px;
+  color: rgba(142, 197, 255, 0.45);
+  text-transform: uppercase;
+  opacity: 0;
+  animation: ciFadeIn 1.4s ease 1.1s forwards;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.ci-boot.ci-hidden {
+  opacity: 0 !important;
+  transform: translateY(-10px);
+}
+
+/* ---- Brand reveal ---- */
+.ci-title-wrap {
+  opacity: 0;
+  transform: translateY(20px) scale(0.97);
+  filter: blur(10px);
+  transition:
+    opacity 1s ease,
+    transform 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 1s ease;
+}
+
+.ci-title-wrap.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+.ci-title-wrap.ci-fade-out {
+  opacity: 0 !important;
+  transform: translateY(-18px) scale(0.985);
+  filter: blur(7px);
+  transition: opacity 0.9s ease, transform 0.9s ease, filter 0.9s ease;
+}
+
+.ci-title {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(46px, 11vw, 134px);
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1;
+  color: #EAF2FC;
+  text-shadow:
+    0 0 42px rgba(35, 136, 255, 0.4),
+    0 0 120px rgba(37, 99, 235, 0.22);
+}
+
+.ci-letter {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(16px);
+  filter: blur(14px);
+  transition:
+    opacity 0.65s ease,
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.65s ease;
+}
+
+.ci-title-wrap.is-visible .ci-letter {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.ci-subtitle {
+  margin: 16px 0 0;
+  font-size: clamp(10px, 1.9vw, 15px);
+  font-weight: 500;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: rgba(169, 196, 228, 0.55);
+}
+
+/* ---- Developer credit ---- */
+.ci-credit {
+  margin-top: 58px;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 1.1s ease 0.2s, transform 1.1s ease 0.2s;
+}
+
+.ci-credit.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ci-credit.ci-fade-out {
+  opacity: 0 !important;
+  transform: translateY(-12px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+
+.ci-credit-line {
+  display: block;
+  width: 64px;
+  height: 1px;
+  margin: 0 auto 18px;
+  background: linear-gradient(90deg, transparent, rgba(142, 197, 255, 0.85), transparent);
+}
+
+.ci-credit-label {
+  margin: 0;
+  font-size: clamp(9px, 1.3vw, 11px);
+  font-weight: 600;
+  letter-spacing: 9px;
+  color: rgba(169, 196, 228, 0.5);
+  text-transform: uppercase;
+}
+
+.ci-credit-name {
+  margin: 10px 0 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(15px, 2.6vw, 26px);
+  font-weight: 600;
+  letter-spacing: 5px;
+  color: rgba(234, 242, 252, 0.92);
+  text-shadow: 0 0 28px rgba(35, 136, 255, 0.18);
+}
+
+/* ---- Enter experience ---- */
+.ci-entry {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.9s ease;
+}
+
+.ci-entry.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ci-entry-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 42px 44px 34px;
+  border-radius: 22px;
+  border: 1px solid rgba(142, 197, 255, 0.18);
+  background: rgba(7, 20, 38, 0.6);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: translateY(20px) scale(0.98);
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ci-entry.is-visible .ci-entry-card {
+  transform: translateY(0) scale(1);
+}
+
+.ci-entry-title {
+  margin: 0 0 6px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #EAF2FC;
+}
+
+.ci-entry-subtitle {
+  margin: 0 0 28px;
+  font-size: 13px;
+  color: rgba(169, 196, 228, 0.6);
+}
+
+.ci-entry-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ci-btn {
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: 12px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+.ci-btn:active { transform: translateY(1px); }
+
+.ci-btn--primary {
+  border: none;
+  background: linear-gradient(135deg, #1677FF, #2388FF);
+  color: #fff;
+  box-shadow: 0 8px 30px rgba(22, 119, 255, 0.35);
+}
+
+.ci-btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 42px rgba(35, 136, 255, 0.5);
+}
+
+.ci-btn--secondary {
+  border: 1px solid rgba(142, 197, 255, 0.4);
+  background: rgba(35, 136, 255, 0.08);
+  color: #B8DAFF;
+}
+
+.ci-btn--secondary:hover {
+  background: rgba(35, 136, 255, 0.16);
+  border-color: rgba(142, 197, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+.ci-btn--ghost {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: transparent;
+  color: rgba(234, 242, 252, 0.72);
+}
+
+.ci-btn--ghost:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #EAF2FC;
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.ci-entry-note {
+  margin: 22px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: rgba(169, 196, 228, 0.4);
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 600px) {
+  .ci-skip { top: 14px; right: 14px; padding: 7px 14px; }
+  .ci-entry-card { padding: 30px 24px 26px; }
+  .ci-credit { margin-top: 40px; }
+  .ci-title { letter-spacing: -0.5px; }
+}
+
+/* ---- Reduced motion: no cinematic drift ---- */
+@media (prefers-reduced-motion: reduce) {
+  .ci-skip { animation: none; opacity: 1; }
+  .ci-boot { animation: none; opacity: 0; }
+}

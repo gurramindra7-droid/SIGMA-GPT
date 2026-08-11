@@ -152,6 +152,32 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+// ─── Guest-Or-Auth Middleware ─────────────────────────────────────────────────
+// Allows either a valid JWT (authenticated user) OR an anonymous guest request.
+// Guests are strictly text-only: they can chat, but never touch protected
+// resources (uploads, chat history, etc.) — enforced here and in the handlers.
+const authOrGuest = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.slice(7).trim();
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded && decoded.guest) {
+        req.guest = true;
+      } else {
+        req.user = decoded;
+      }
+      return next();
+    } catch (error) {
+      console.log("[Auth] ❌ Verification failed:", error.message);
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+  }
+  // No credentials → anonymous guest (text-only chat allowed)
+  req.guest = true;
+  next();
+};
+
 // ─── Auth Routes ─────────────────────────────────────────────────────────────
 
 app.post("/api/register", async (req, res) => {
@@ -314,15 +340,38 @@ app.delete("/api/chats/:id", authMiddleware, async (req, res) => {
   }
 });
 
-app.post("/api/chat", authMiddleware, async (req, res) => {
+app.post("/api/chat", authOrGuest, async (req, res) => {
   try {
     const { message, chatId } = req.body;
     if (!message) return res.status(400).json({ error: "Message is required" });
 
+    const isGuest = !!req.guest;
+
+    // Guests are strictly text-only — reject any file/media payload server-side
+    // so the restriction cannot be bypassed from the browser dev tools.
+    if (isGuest && (req.body.fileType || req.body.fileUrl || req.body.fileText || req.body.fileName)) {
+      return res.status(403).json({ error: "Guest mode supports text messages only" });
+    }
+
     let conversationHistory = [];
     let chat = null;
 
-    if (chatId) {
+    // Guests keep no server history, so trust the in-session conversation they send
+    // (validated + capped) to give the AI multi-turn context.
+    if (isGuest && Array.isArray(req.body.history)) {
+      conversationHistory = req.body.history
+        .slice(-40)
+        .filter(
+          (m) =>
+            m &&
+            (m.role === "user" || m.role === "assistant") &&
+            typeof m.content === "string" &&
+            m.content.length <= 20000
+        )
+        .map((m) => ({ role: m.role, content: m.content }));
+    }
+
+    if (!isGuest && chatId) {
       chat = await Chat.findOne({ _id: chatId, userId: req.user.id });
       if (chat) {
         conversationHistory = chat.messages.map((m) => ({
@@ -334,11 +383,11 @@ app.post("/api/chat", authMiddleware, async (req, res) => {
       }
     }
 
-    // Build the user message — include file context if present
+    // Build the user message — include file context if present (authenticated users only)
     let userContent = message;
-    if (req.body.fileType && req.body.fileText) {
+    if (!isGuest && req.body.fileType && req.body.fileText) {
       userContent = `[${req.body.fileType.toUpperCase()} - ${req.body.fileName}]:\n${req.body.fileText}\n\nUser asks: ${message}`;
-    } else if (req.body.fileType) {
+    } else if (!isGuest && req.body.fileType) {
       userContent = `[${req.body.fileType.toUpperCase()} - ${req.body.fileName}]: ${message}`;
     }
     conversationHistory.push({ role: "user", content: userContent });
@@ -360,7 +409,13 @@ app.post("/api/chat", authMiddleware, async (req, res) => {
       res.write(text);
     }
 
-    // Build message objects with file metadata
+    // Guests get the streaming reply but no persistence, no history, no chat id
+    if (isGuest) {
+      res.end();
+      return;
+    }
+
+    // Build message objects with file metadata (authenticated users only)
     const userMsgObj = {
       role: "user",
       content: message,

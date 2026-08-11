@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/auth.css";
 import api from "../api";
+import SigmaMark from "../components/SigmaMark";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -102,6 +103,7 @@ export default function Register() {
       const data = await api.register(form.fullName, form.email, form.password, form.username);
       localStorage.setItem("sigma_token", data.token);
       localStorage.setItem("sigma_username", data.user.username);
+      localStorage.setItem("sigma_email", data.user.email);
       navigate("/chat");
     } catch (err) {
       setBannerError(err.message);
@@ -113,21 +115,25 @@ export default function Register() {
   const handleGuestLogin = () => {
     localStorage.setItem("sigma_username", "Guest");
     localStorage.removeItem("sigma_token");
+    localStorage.removeItem("sigma_email");
     navigate("/chat");
   };
 
   return (
     <div className="auth-page">
       <div className="auth-bg">
-        <div className="auth-orb auth-orb--green" />
-        <div className="auth-orb auth-orb--blue" />
-        <div className="auth-orb auth-orb--small" />
+        <div className="auth-orb auth-orb--a" />
+        <div className="auth-orb auth-orb--b" />
+        <div className="auth-orb auth-orb--c" />
       </div>
 
       <div className="auth-wrapper">
         <div className="auth-card">
           <div className="auth-header">
-            <h1 className="auth-logo">⚡ SIGMA-GPT</h1>
+            <div className="auth-logo-row">
+              <SigmaMark size={30} />
+              <h1 className="auth-logo"><span className="sigma-accent">SIGMA</span>-GPT</h1>
+            </div>
             <p className="auth-subtitle">Create your account. It&apos;s free.</p>
           </div>
 
