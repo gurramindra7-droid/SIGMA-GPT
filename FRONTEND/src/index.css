@@ -2,74 +2,70 @@
 @import "./styles/chat.css";
 
 /* ============================================================
-   SIGMA-GPT — Global Design System
-   Deep Navy  →  Tech Blue  →  Soft Blue
+   SIGMA-GPT — Premium Intelligence Workstation
+   Dark Navy  →  Electric Blue  →  Editorial
    ============================================================ */
 
 :root {
-  /* ── Deep Navy foundation ─────────────────────────────── */
-  --sigma-navy: #071426;
-  --sigma-navy-deep: #050D1A;
-  --sigma-navy-light: #0A1F36;
-  --sigma-navy-raised: #0D2440;
+  /* ── Core backgrounds ──────────────────────────────────── */
+  --bg-primary: #151419;
+  --bg-secondary: #0D0F14;
+  --bg-surface: #10131A;
+  --bg-raised: #1A1D25;
+  --bg-overlay: rgba(13, 15, 20, 0.92);
 
-  /* ── Tech Blue accents ────────────────────────────────── */
-  --sigma-blue: #2388FF;
-  --sigma-blue-bright: #3B9BFF;
-  --sigma-blue-dark: #1677FF;
+  /* ── Accent ────────────────────────────────────────────── */
+  --accent: #027CFE;
+  --accent-bright: #1688FF;
+  --accent-dark: #0066DD;
+  --accent-glow: rgba(2, 124, 254, 0.15);
+  --accent-glow-strong: rgba(2, 124, 254, 0.3);
 
-  /* ── Soft Blue tints ──────────────────────────────────── */
-  --sigma-soft: #B8DAFF;
-  --sigma-soft-mid: #8EC5FF;
-  --sigma-soft-pale: #D5EAFF;
+  /* ── Text ──────────────────────────────────────────────── */
+  --text-primary: #FFFFFF;
+  --text-secondary: #A6ACB8;
+  --text-muted: #6F7785;
+  --text-dim: #4A5060;
 
-  /* ── Text ─────────────────────────────────────────────── */
-  --sigma-text: #EAF2FC;
-  --sigma-text-secondary: #A9C4E4;
-  --sigma-text-muted: #6E8BB0;
+  /* ── Borders ───────────────────────────────────────────── */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.14);
+  --border-active: rgba(2, 124, 254, 0.4);
 
-  /* ── Surfaces & borders ───────────────────────────────── */
-  --sigma-border: rgba(142, 197, 255, 0.14);
-  --sigma-border-strong: rgba(142, 197, 255, 0.28);
-  --sigma-surface: rgba(8, 26, 46, 0.82);
-  --sigma-surface-solid: #0A1F36;
-  --sigma-glass: rgba(10, 31, 54, 0.55);
+  /* ── Status ────────────────────────────────────────────── */
+  --error: #F87171;
+  --warning: #FBBF24;
+  --success: #34D399;
 
-  /* ── Glows ────────────────────────────────────────────── */
-  --sigma-glow: rgba(35, 136, 255, 0.35);
-  --sigma-glow-soft: rgba(35, 136, 255, 0.16);
-
-  /* ── Status ───────────────────────────────────────────── */
-  --sigma-error: #F87171;
-  --sigma-warning: #FBBF24;
-  --sigma-success: #34D399;
-
-  /* ── Typography ───────────────────────────────────────── */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  /* ── Typography ────────────────────────────────────────── */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display: "Space Grotesk", "Inter", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
 
-  /* ── Spacing scale (4/8/12/16/24/32/48) ───────────────── */
+  /* ── Spacing ───────────────────────────────────────────── */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
   --sp-4: 16px;
+  --sp-5: 20px;
   --sp-6: 24px;
   --sp-8: 32px;
+  --sp-10: 40px;
   --sp-12: 48px;
 
-  /* ── Radii (sophisticated, not cartoonish) ────────────── */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  /* ── Radii ─────────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 
-  /* ── Motion ───────────────────────────────────────────── */
+  /* ── Motion ────────────────────────────────────────────── */
   --t-fast: 150ms ease;
   --t-normal: 250ms ease;
+  --t-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ---- Base ---- */
+/* ---- Base Reset ---- */
 *,
 *::before,
 *::after {
@@ -87,8 +83,8 @@ html {
 }
 
 body {
-  background: var(--sigma-navy-deep);
-  color: var(--sigma-text);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   min-height: 100dvh;
   overflow: hidden;
 }
@@ -98,9 +94,9 @@ body {
   overflow: hidden;
 }
 
-/* ---- Focus styles ---- */
+/* ---- Focus ---- */
 :focus-visible {
-  outline: 2px solid var(--sigma-blue);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -110,10 +106,10 @@ button:focus:not(:focus-visible) {
 }
 
 /* ---- Scrollbar ---- */
-::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(142, 197, 255, 0.18); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(142, 197, 255, 0.35); }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.14); }
 
 /* ---- Reduced motion ---- */
 @media (prefers-reduced-motion: reduce) {
@@ -124,4 +120,17 @@ button:focus:not(:focus-visible) {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ---- Utility: hidden label (a11y) ---- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

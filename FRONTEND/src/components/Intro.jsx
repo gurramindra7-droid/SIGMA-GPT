@@ -67,8 +67,8 @@ function buildScene(THREE, host, quality) {
   host.appendChild(canvas);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x04060c);
-  scene.fog = new THREE.FogExp2(0x04060c, 0.045);
+  scene.background = new THREE.Color(0x0A0C12);
+  scene.fog = new THREE.FogExp2(0x0A0C12, 0.045);
 
   const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 120);
   camera.position.set(0, 0, 9.5);
@@ -88,18 +88,18 @@ function buildScene(THREE, host, quality) {
 
   // Inner glowing sphere (deep blue)
   const innerGeo = new THREE.SphereGeometry(0.82, 28, 28);
-  const innerMat = new THREE.MeshBasicMaterial({ color: 0x0a2a4a, transparent: true, opacity: 0.85 });
+  const innerMat = new THREE.MeshBasicMaterial({ color: 0x027CFE, transparent: true, opacity: 0.65 });
   const inner = new THREE.Mesh(innerGeo, innerMat);
   coreGroup.add(inner);
 
   // Wireframe shells (subtle cyan / blue)
   const shellGeo = new THREE.IcosahedronGeometry(1.12, 1);
-  const shellMat = new THREE.MeshBasicMaterial({ color: 0x8EC5FF, wireframe: true, transparent: true, opacity: 0.26 });
+  const shellMat = new THREE.MeshBasicMaterial({ color: 0xA6ACB8, wireframe: true, transparent: true, opacity: 0.2 });
   const shell = new THREE.Mesh(shellGeo, shellMat);
   coreGroup.add(shell);
 
   const shell2Geo = new THREE.OctahedronGeometry(1.55, 0);
-  const shell2Mat = new THREE.MeshBasicMaterial({ color: 0x2388FF, wireframe: true, transparent: true, opacity: 0.13 });
+  const shell2Mat = new THREE.MeshBasicMaterial({ color: 0x027CFE, wireframe: true, transparent: true, opacity: 0.1 });
   const shell2 = new THREE.Mesh(shell2Geo, shell2Mat);
   coreGroup.add(shell2);
 
@@ -107,9 +107,9 @@ function buildScene(THREE, host, quality) {
   const glowSprite = new THREE.Sprite(
     new THREE.SpriteMaterial({
       map: makeGlowTexture(THREE),
-      color: 0x2388FF,
+      color: 0x027CFE,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.35,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     })
@@ -118,14 +118,14 @@ function buildScene(THREE, host, quality) {
   coreGroup.add(glowSprite);
 
   // Point light pulses inside the core
-  const light = new THREE.PointLight(0x2388FF, 1.1, 30);
+  const light = new THREE.PointLight(0x027CFE, 1.1, 30);
   coreGroup.add(light);
 
   // Orbital rings (3, tilted, rotating) + orbiting node points
   const ringConfigs = [
-    { radius: 2.15, tilt: 0.42, speed: 0.16, color: 0x2388FF, nodes: quality === "high" ? 26 : 14 },
-    { radius: 2.75, tilt: -0.6, speed: -0.1, color: 0x2F8FFF, nodes: quality === "high" ? 22 : 12 },
-    { radius: 3.4, tilt: 1.05, speed: 0.07, color: 0x3B9BFF, nodes: quality === "high" ? 18 : 10 },
+    { radius: 2.15, tilt: 0.42, speed: 0.16, color: 0x027CFE, nodes: quality === "high" ? 26 : 14 },
+    { radius: 2.75, tilt: -0.6, speed: -0.1, color: 0x1688FF, nodes: quality === "high" ? 22 : 12 },
+    { radius: 3.4, tilt: 1.05, speed: 0.07, color: 0x027CFE, nodes: quality === "high" ? 18 : 10 },
   ];
   const ringLines = [];
   const ringNodes = [];
@@ -184,7 +184,7 @@ function buildScene(THREE, host, quality) {
   }
   const neuralGeo = new THREE.BufferGeometry();
   neuralGeo.setAttribute("position", new THREE.BufferAttribute(neuralPositions, 3));
-  const neuralMat = new THREE.LineBasicMaterial({ color: 0x2388FF, transparent: true, opacity: 0.09 });
+  const neuralMat = new THREE.LineBasicMaterial({ color: 0x027CFE, transparent: true, opacity: 0.07 });
   const neural = new THREE.LineSegments(neuralGeo, neuralMat);
   coreGroup.add(neural);
 
@@ -202,7 +202,7 @@ function buildScene(THREE, host, quality) {
   const dustGeo = new THREE.BufferGeometry();
   dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPositions, 3));
   const dustMat = new THREE.PointsMaterial({
-    color: 0xB8DAFF,
+    color: 0xA6ACB8,
     size: 0.05,
     transparent: true,
     opacity: 0,
@@ -313,7 +313,7 @@ function CssFallback() {
             height: p.size,
             animationDelay: `${p.delay}s`,
             animationDuration: `${p.duration}s`,
-            background: `hsla(${p.hue}, 85%, 72%, 0.5)`,
+            background: `hsla(210, 90%, 50%, 0.35)`,
           }}
         />
       ))}

@@ -7,10 +7,9 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { FiCopy, FiRefreshCw, FiThumbsUp, FiThumbsDown, FiFile, FiMic } from "react-icons/fi";
 import ThinkingDots from "./ThinkingDots";
 import ImageLightbox from "./ImageLightbox";
-import SigmaMark from "./SigmaMark";
 import API_BASE_URL from "../config/api";
 
-/* Navy code block with language indicator + copy button */
+/* Code block with language indicator + copy */
 function CodeBlock({ language, children }) {
   const [copied, setCopied] = useState(false);
   const codeString = String(children);
@@ -33,7 +32,7 @@ function CodeBlock({ language, children }) {
         style={oneDark}
         language={language}
         PreTag="div"
-        customStyle={{ margin: 0, background: "transparent", fontSize: 13 }}
+        customStyle={{ margin: 0, background: "transparent", fontSize: 12.5 }}
       >
         {codeString}
       </SyntaxHighlighter>
@@ -81,69 +80,76 @@ export default function ChatMessage({ msg, username, index, onRetry, isStreaming
 
   return (
     <>
-      <div className={"message-wrapper " + (isUser ? "user" : "assistant")}>
-        {isAssistant && <div className="message-avatar assistant" aria-hidden="true">Σ</div>}
-        <div className={"message-bubble " + (isUser ? "user" : "assistant") + (isStreaming ? " streaming" : "")}>
-          {msg.type === "image" && fullImageUrl && (
-            <div className="message-image-card" onClick={() => setLightboxSrc(fullImageUrl)}>
-              <img src={fullImageUrl} alt={msg.fileName || "Uploaded image"} loading="lazy" />
-              {msg.fileName && <div className="message-image-label"><span>🖼️</span><span>{msg.fileName}</span></div>}
+      {isUser ? (
+        /* ── User message: right-aligned with label ── */
+        <div className="message-wrapper user">
+          <div className="message-avatar user" aria-hidden="true">{userInitial}</div>
+          <div style={{ maxWidth: "68%", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+            <div className="message-label user-label">
+              <span>YOU</span>
             </div>
-          )}
-          {msg.type === "pdf" && msg.fileName && (
-            <div className="message-pdf-card">
-              <div className="message-pdf-icon"><FiFile size={20} /></div>
-              <div className="message-pdf-info">
-                <div className="message-pdf-name">{msg.fileName}</div>
-                <div className="message-pdf-meta">PDF document</div>
-              </div>
-            </div>
-          )}
-          {msg.type === "voice" && <div className="message-voice-badge"><FiMic size={12} /><span>Voice input</span></div>}
-
-          {isUser ? (
-            <p className="message-user-text">{msg.content}</p>
-          ) : isError ? (
-            <div className="error-message">
-              <span className="error-message-title">Something went wrong</span>
-              <span className="error-message-text">
-                SIGMA-GPT couldn&apos;t complete that request. Please try again.
-              </span>
-              {onRetry && (
-                <button type="button" className="error-message-retry" onClick={() => onRetry(index)}>
-                  Try again
-                </button>
-              )}
-            </div>
-          ) : isEmpty ? (
-            <ThinkingDots />
-          ) : (
-            <>
-              {isAssistant && !isStreaming && (
-                <div className="message-ai-header">
-                  <SigmaMark size={14} />
-                  <span className="message-ai-name">SIGMA-GPT</span>
+            <div className="message-bubble user">
+              {msg.type === "image" && fullImageUrl && (
+                <div className="message-image-card" onClick={() => setLightboxSrc(fullImageUrl)}>
+                  <img src={fullImageUrl} alt={msg.fileName || "Uploaded image"} loading="lazy" />
+                  {msg.fileName && <div className="message-image-label"><FiFile size={12} /><span>{msg.fileName}</span></div>}
                 </div>
               )}
+              {msg.type === "pdf" && msg.fileName && (
+                <div className="message-pdf-card">
+                  <div className="message-pdf-icon"><FiFile size={18} /></div>
+                  <div className="message-pdf-info">
+                    <div className="message-pdf-name">{msg.fileName}</div>
+                    <div className="message-pdf-meta">PDF document</div>
+                  </div>
+                </div>
+              )}
+              {msg.type === "voice" && <div className="message-voice-badge"><FiMic size={11} /><span>Voice input</span></div>}
+              <p className="message-user-text">{msg.content}</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ── Assistant message: editorial layout ── */
+        <div className="message-wrapper assistant">
+          <div className="message-label assistant-label">
+            <div className="message-label-dot" />
+            <span>SIGMA</span>
+          </div>
+          <div className={"message-bubble assistant" + (isStreaming ? " streaming" : "")}>
+            {isError ? (
+              <div className="error-message">
+                <span className="error-message-title">Something went wrong</span>
+                <span className="error-message-text">
+                  SIGMA-GPT couldn&apos;t complete that request. Please try again.
+                </span>
+                {onRetry && (
+                  <button type="button" className="error-message-retry" onClick={() => onRetry(index)}>
+                    Try again
+                  </button>
+                )}
+              </div>
+            ) : isEmpty ? (
+              <ThinkingDots />
+            ) : (
               <div className="sigma-markdown">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                   {msg.content}
                 </ReactMarkdown>
               </div>
-            </>
-          )}
+            )}
 
-          {showActions && (
-            <div className="message-actions visible">
-              <button onClick={handleCopy} className={"message-action-btn" + (copied ? " copied" : "")} title={copied ? "Copied!" : "Copy"}><FiCopy size={14} /></button>
-              {onRetry && <button onClick={() => onRetry(index)} className="message-action-btn" title="Regenerate"><FiRefreshCw size={14} /></button>}
-              <button onClick={() => setLiked(liked === "like" ? null : "like")} className={"message-action-btn" + (liked === "like" ? " liked" : "")} title="Like"><FiThumbsUp size={14} /></button>
-              <button onClick={() => setLiked(liked === "dislike" ? null : "dislike")} className={"message-action-btn" + (liked === "dislike" ? " disliked" : "")} title="Dislike"><FiThumbsDown size={14} /></button>
-            </div>
-          )}
+            {showActions && (
+              <div className="message-actions visible">
+                <button onClick={handleCopy} className={"message-action-btn" + (copied ? " copied" : "")} title={copied ? "Copied!" : "Copy"}><FiCopy size={13} /></button>
+                {onRetry && <button onClick={() => onRetry(index)} className="message-action-btn" title="Regenerate"><FiRefreshCw size={13} /></button>}
+                <button onClick={() => setLiked(liked === "like" ? null : "like")} className={"message-action-btn" + (liked === "like" ? " liked" : "")} title="Like"><FiThumbsUp size={13} /></button>
+                <button onClick={() => setLiked(liked === "dislike" ? null : "dislike")} className={"message-action-btn" + (liked === "dislike" ? " disliked" : "")} title="Dislike"><FiThumbsDown size={13} /></button>
+              </div>
+            )}
+          </div>
         </div>
-        {isUser && <div className="message-avatar user" aria-hidden="true">{userInitial}</div>}
-      </div>
+      )}
       {lightboxSrc && <ImageLightbox src={lightboxSrc} alt={msg.fileName || "Image"} onClose={() => setLightboxSrc(null)} />}
     </>
   );

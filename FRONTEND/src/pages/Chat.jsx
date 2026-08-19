@@ -1,6 +1,6 @@
 // src/pages/Chat.jsx
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { FiSend, FiPlus, FiMic, FiImage, FiFile, FiMenu, FiShield } from "react-icons/fi";
+import { FiSend, FiPlus, FiMic, FiImage, FiFile, FiMenu, FiShield, FiX } from "react-icons/fi";
 import API_BASE_URL from "../config/api";
 import { getChats, getChatById, uploadImage, uploadPdf } from "../api";
 import { useVoiceInput } from "../hooks/useVoiceInput";
@@ -14,70 +14,123 @@ function newChat() {
   return { id: "new-" + Date.now(), title: "New Chat", messages: [], backendId: null, createdAt: Date.now() };
 }
 
-/* ─── Lightweight welcome state ─── */
-function WelcomeScreen({ onSuggestion, onStart }) {
-  const particles = useMemo(
-    () =>
-      Array.from({ length: 18 }, (_, i) => ({
-        left: (i * 47 + 13) % 100,
-        top: (i * 31 + 9) % 100,
-        size: 2 + ((i * 5) % 3),
-        delay: (i % 8) * 0.8,
-        duration: 9 + ((i * 3) % 7),
-      })),
-    []
-  );
+const MODELS = [
+  { id: "sigma-core", label: "SIGMA CORE", desc: "Default" },
+  { id: "sigma-reason", label: "SIGMA REASON", desc: "Deep Thinking" },
+  { id: "sigma-vision", label: "SIGMA VISION", desc: "Image Analysis" },
+  { id: "sigma-code", label: "SIGMA CODE", desc: "Code Generation" },
+];
 
+/* ─── Editorial Welcome State ─── */
+function WelcomeScreen({ onSuggestion, onStart }) {
   const suggestions = [
-    "Explain quantum computing simply",
-    "Write a Python script to analyze CSV data",
-    "Help me debug a React component",
-    "Create a workout plan for beginners",
+    "RESEARCH",
+    "WRITE",
+    "CODE",
+    "ANALYZE",
+    "CREATE",
   ];
 
   return (
     <div className="welcome-screen">
       <div className="welcome-ambient" aria-hidden="true" />
-      {particles.map((p, i) => (
-        <span
-          key={i}
-          className="welcome-particle"
-          aria-hidden="true"
-          style={{
-            left: `${p.left}%`,
-            top: `${p.top}%`,
-            width: p.size,
-            height: p.size,
-            animationDelay: `${p.delay}s`,
-            animationDuration: `${p.duration}s`,
-          }}
-        />
-      ))}
-
       <div className="welcome-content">
-        <div className="welcome-mark"><SigmaMark size={40} /></div>
+        <div className="welcome-mark"><SigmaMark size={44} /></div>
+        <p className="welcome-credit">SIGMA-GPT / 01</p>
         <h1 className="welcome-title">
-          Welcome to <span className="sigma-accent">SIGMA</span>-GPT
+          INTELLIGENCE,<br />ENGINEERED.
         </h1>
         <p className="welcome-subtitle">
-          Your intelligent AI workspace. Ask a question, explore an idea, or start building something new.
-        </p>
-        <p className="welcome-credit">
-          Engineered by <span>GURRAM INDRASENA YADAV</span>
+          An advanced AI workspace for thinking, creating, researching and building.
         </p>
         <div className="welcome-actions">
-          <button type="button" className="welcome-start-btn" onClick={onStart}>
-            Start a conversation
-          </button>
           <div className="welcome-suggestions">
             {suggestions.map((s, i) => (
-              <button key={i} type="button" className="welcome-chip" onClick={() => onSuggestion(s)}>
+              <button key={i} type="button" className="welcome-chip" onClick={() => {
+                const prompts = {
+                  "RESEARCH": "Help me research the latest developments in quantum computing",
+                  "WRITE": "Write a professional technical blog post about AI in 2026",
+                  "CODE": "Explain how to build a REST API with Node.js and Express",
+                  "ANALYZE": "Analyze the pros and cons of microservices vs monolith architecture",
+                  "CREATE": "Create a project plan for building a full-stack web application",
+                };
+                onSuggestion(prompts[s] || s);
+              }}>
                 {s}
               </button>
             ))}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ─── Model Selector Dropdown ─── */
+function ModelSelector({ current, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  const currentModel = MODELS.find((m) => m.id === current) || MODELS[0];
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex", alignItems: "center", gap: 6,
+          padding: "5px 10px", borderRadius: "var(--radius-sm)",
+          background: "var(--bg-surface)", border: "1px solid var(--border)",
+          color: "var(--text-secondary)", fontSize: 11, fontWeight: 600,
+          fontFamily: "var(--font-display)", letterSpacing: "0.5px",
+          cursor: "pointer", transition: "all 150ms ease",
+          textTransform: "uppercase",
+        }}
+        aria-label="Select model"
+        aria-expanded={open}
+      >
+        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />
+        {currentModel.label}
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", bottom: "100%", left: 0, marginBottom: 4,
+          minWidth: 180, background: "var(--bg-secondary)",
+          border: "1px solid var(--border)", borderRadius: "var(--radius-sm)",
+          padding: 4, zIndex: 50, boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+        }}>
+          {MODELS.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => { onChange(m.id); setOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                width: "100%", padding: "8px 10px", borderRadius: 4,
+                background: m.id === current ? "rgba(2,124,254,0.08)" : "transparent",
+                border: "none", color: m.id === current ? "var(--text-primary)" : "var(--text-secondary)",
+                fontSize: 12, fontFamily: "var(--font-display)", fontWeight: 500,
+                cursor: "pointer", transition: "background 150ms ease",
+                textAlign: "left", letterSpacing: "0.3px",
+              }}
+              onMouseEnter={(e) => { if (m.id !== current) e.target.style.background = "rgba(255,255,255,0.03)"; }}
+              onMouseLeave={(e) => { if (m.id !== current) e.target.style.background = "transparent"; }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {m.id === current && <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent)" }} />}
+                {m.label}
+              </span>
+              <span style={{ fontSize: 10, color: "var(--text-dim)", letterSpacing: "0.5px" }}>{m.desc}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -95,13 +148,14 @@ export default function Chat({ username, onLogout }) {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [, setShowWaveform] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [currentModel, setCurrentModel] = useState("sigma-core");
+  const [contextPanelOpen, setContextPanelOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const chatBoxRef = useRef(null);
   const fileInputRef = useRef(null);
   const pdfInputRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Guest = anonymous session (a registered account named "Guest" keeps full access)
   const isGuest = username === "Guest" && !localStorage.getItem("sigma_token");
 
   const handleTranscript = useCallback((text) => {
@@ -147,7 +201,6 @@ export default function Chat({ username, onLogout }) {
     loadChats();
   }, [backendStatus, isGuest]);
 
-  // Handle manual scroll detection
   const handleScroll = useCallback(() => {
     const el = chatBoxRef.current;
     if (!el) return;
@@ -155,7 +208,6 @@ export default function Chat({ username, onLogout }) {
     setAutoScroll(distFromBottom < 80);
   }, []);
 
-  // Auto scroll only when user is at bottom
   useEffect(() => {
     if (autoScroll) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -169,7 +221,6 @@ export default function Chat({ username, onLogout }) {
 
   const updateChat = useCallback((id, updater) => { setChats((prev) => prev.map((c) => (c.id === id ? updater(c) : c))); }, []);
 
-  /* Network half of sending — assumes the UI messages already exist in state */
   const runChat = useCallback(async (messageText, fileToSend = null) => {
     try {
       const currentChat = activeChat;
@@ -184,9 +235,7 @@ export default function Chat({ username, onLogout }) {
         fileText: fileToSend?.type === 'pdf' ? fileToSend.text : null,
       };
       const headers = { 'Content-Type': 'application/json' };
-      // Only authenticated users send a token — guests are anonymous
       if (token) headers.Authorization = 'Bearer ' + token;
-      // Guests keep no server history, so send the in-session conversation for context
       if (!token) {
         body.history = (activeChat?.messages || [])
           .filter((m) => m.content && m.content !== '__SIGMA_ERROR__')
@@ -238,7 +287,6 @@ export default function Chat({ username, onLogout }) {
     await runChat(messageText, fileToSend);
   };
 
-  /* Retry / regenerate: re-send the user message that precedes the given message index */
   const retryMessage = useCallback((index) => {
     const msgs = activeChat?.messages || [];
     const userMsg = msgs[index - 1];
@@ -248,7 +296,6 @@ export default function Chat({ username, onLogout }) {
       arr[index] = { role: 'assistant', content: '', type: 'text' };
       return { ...c, messages: arr };
     });
-    // Re-attach file metadata if the original message carried an attachment
     const fileMeta =
       userMsg.type && userMsg.type !== 'text'
         ? { type: userMsg.type, url: userMsg.fileUrl, name: userMsg.fileName, text: userMsg.fileText || null }
@@ -316,10 +363,10 @@ export default function Chat({ username, onLogout }) {
   if (backendStatus === "connecting" && !isGuest) {
     return (
       <div className="cold-start-screen">
-        <div className="cold-start-mark"><SigmaMark size={54} /></div>
-        <h2 className="cold-start-title">Waking up SIGMA-GPT...</h2>
-        <p className="cold-start-text">The backend is starting up. This may take a moment.</p>
-        <div style={{ display: "flex", gap: "6px" }}>
+        <div className="cold-start-mark"><SigmaMark size={48} /></div>
+        <h2 className="cold-start-title">Initializing SIGMA-GPT...</h2>
+        <p className="cold-start-text">The intelligence core is waking up.</p>
+        <div style={{ display: "flex", gap: "5px" }}>
           <div className="thinking-dot" />
           <div className="thinking-dot" />
           <div className="thinking-dot" />
@@ -333,8 +380,8 @@ export default function Chat({ username, onLogout }) {
 
   const guestBanner = (
     <div className="guest-banner">
-      <FiShield className="guest-banner-icon" size={15} />
-      <span>You are in Guest mode — </span>
+      <FiShield className="guest-banner-icon" size={14} />
+      <span>Guest mode — </span>
       <span onClick={() => window.location.href='/register'} className="guest-banner-link">Sign up for full access</span>
     </div>
   );
@@ -363,29 +410,30 @@ export default function Chat({ username, onLogout }) {
       <div className="chat-main">
         {/* Mobile header */}
         <div className="mobile-header">
-          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar"><FiMenu size={20} /></button>
+          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar"><FiMenu size={18} /></button>
           <div className="mobile-header-brand">
-            <SigmaMark size={22} />
+            <SigmaMark size={20} />
             <span className="mobile-header-title">SIGMA-GPT</span>
           </div>
-          <button className="mobile-header-new-btn" onClick={addNewChat} aria-label="New chat"><FiPlus size={16} /></button>
+          <button className="mobile-header-new-btn" onClick={addNewChat} aria-label="New chat"><FiPlus size={14} /></button>
         </div>
 
         {/* Desktop header */}
         <div className="chat-header">
           <div className="chat-header-left">
             <button className="hamburger-btn chat-header-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
-              <FiMenu size={20} />
+              <FiMenu size={18} />
             </button>
             <div className="chat-header-brand">
-              <SigmaMark size={26} />
+              <SigmaMark size={22} />
               <div>
                 <span className="chat-header-title">SIGMA-GPT</span>
-                <span className="chat-header-subtitle">AI Conversation</span>
+                <span className="chat-header-subtitle">Intelligence Core</span>
               </div>
             </div>
           </div>
           <div className="chat-header-right">
+            <ModelSelector current={currentModel} onChange={setCurrentModel} />
             <button className="chat-header-avatar-btn" onClick={() => setProfileOpen(true)} aria-label="Open profile">
               {initials}
             </button>
@@ -395,7 +443,7 @@ export default function Chat({ username, onLogout }) {
         {/* Messages or Welcome Screen */}
         {msgs.length === 0 ? (
           <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-            {isGuest && <div style={{ margin: "14px auto 0", maxWidth: 640, width: "calc(100% - 32px)" }}>{guestBanner}</div>}
+            {isGuest && <div style={{ margin: "14px auto 0", maxWidth: 600, width: "calc(100% - 32px)" }}>{guestBanner}</div>}
             <WelcomeScreen
               onSuggestion={(text) => {
                 setInput(text);
@@ -430,35 +478,35 @@ export default function Chat({ username, onLogout }) {
             {voiceError && (
               <div className="voice-error-banner">
                 <span>{voiceError}</span>
-                <button className="voice-error-close" onClick={clearError}>✕</button>
+                <button className="voice-error-close" onClick={clearError}><FiX size={12} /></button>
               </div>
             )}
             {listening && interimText && <div className="voice-live-transcript">{interimText}</div>}
             {attachedFile && (
               <div className="composer-file-preview">
-                <span className="composer-file-preview-icon">{attachedFile.type === "image" ? "🖼️" : "📄"}</span>
+                <span className="composer-file-preview-icon">{attachedFile.type === "image" ? "🖼" : "📄"}</span>
                 <span className="composer-file-preview-name">{attachedFile.name}</span>
                 <button className="composer-file-preview-remove" onClick={() => setAttachedFile(null)} aria-label="Remove attachment">✕</button>
               </div>
             )}
             <div className="composer-container">
-              <textarea ref={textareaRef} name="message-input" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading || uploadingFile} rows={1} placeholder={listening ? "🎤 Listening..." : attachedFile ? "Ask about this " + attachedFile.type + "..." : "Ask SIGMA-GPT anything..."} className="composer-textarea" aria-label="Message input" />
+              <textarea ref={textareaRef} name="message-input" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading || uploadingFile} rows={1} placeholder={listening ? "Listening..." : attachedFile ? "Ask about this " + attachedFile.type + "..." : "Ask Sigma-GPT anything..."} className="composer-textarea" aria-label="Message input" />
               <div className="composer-actions">
                 {!isGuest && voiceSupported && (
                   <button onClick={toggleVoice} disabled={loading || uploadingFile} className={"composer-btn" + (listening ? " recording" : "")} title={listening ? "Stop recording" : "Voice input"} aria-label={listening ? "Stop recording" : "Voice input"}>
-                    {listening ? <span className="voice-recording-indicator"><span className="voice-recording-dot" /></span> : <FiMic size={16} />}
+                    {listening ? <span className="voice-recording-indicator"><span className="voice-recording-dot" /></span> : <FiMic size={15} />}
                   </button>
                 )}
                 {!isGuest && (
                   <>
                     <input ref={fileInputRef} name="image-upload" type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handleImageSelect} style={{ display: "none" }} />
-                    <button onClick={() => fileInputRef.current?.click()} disabled={loading || uploadingFile} className="composer-btn" title="Upload image" aria-label="Upload image"><FiImage size={16} /></button>
+                    <button onClick={() => fileInputRef.current?.click()} disabled={loading || uploadingFile} className="composer-btn" title="Upload image" aria-label="Upload image"><FiImage size={15} /></button>
                     <input ref={pdfInputRef} name="pdf-upload" type="file" accept="application/pdf" onChange={handlePdfSelect} style={{ display: "none" }} />
-                    <button onClick={() => pdfInputRef.current?.click()} disabled={loading || uploadingFile} className="composer-btn" title="Upload PDF" aria-label="Upload PDF"><FiFile size={16} /></button>
+                    <button onClick={() => pdfInputRef.current?.click()} disabled={loading || uploadingFile} className="composer-btn" title="Upload PDF" aria-label="Upload PDF"><FiFile size={15} /></button>
                   </>
                 )}
                 <button onClick={() => sendMessage()} disabled={loading || uploadingFile || (!(input || "").trim() && !attachedFile)} className="composer-btn send" title="Send message" aria-label="Send message">
-                  <FiSend size={16} />
+                  <FiSend size={15} />
                 </button>
               </div>
             </div>

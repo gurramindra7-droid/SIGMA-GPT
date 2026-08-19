@@ -8,8 +8,8 @@
   inset: 0;
   z-index: 9999;
   overflow: hidden;
-  background: #04060c;
-  color: #EAF2FC;
+  background: #0A0C12;
+  color: #FFFFFF;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   transition: opacity 0.65s ease;
@@ -37,10 +37,10 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 70% 55% at 50% 42%, rgba(23, 52, 96, 0.55), transparent 70%),
-    radial-gradient(ellipse 40% 30% at 28% 22%, rgba(30, 64, 120, 0.32), transparent 70%),
-    radial-gradient(ellipse 45% 35% at 74% 68%, rgba(14, 116, 144, 0.22), transparent 70%),
-    #04060c;
+    radial-gradient(ellipse 70% 55% at 50% 42%, rgba(2, 80, 180, 0.45), transparent 70%),
+    radial-gradient(ellipse 40% 30% at 28% 22%, rgba(2, 124, 254, 0.25), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 74% 68%, rgba(22, 136, 255, 0.15), transparent 70%),
+    #0A0C12;
 }
 
 /* ---- CSS fallback (no WebGL) ---- */
@@ -49,9 +49,9 @@
   inset: 0;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 60% 50% at 50% 45%, rgba(23, 52, 96, 0.5), transparent 70%),
-    radial-gradient(ellipse 35% 30% at 25% 20%, rgba(30, 64, 120, 0.3), transparent 70%),
-    #04060c;
+    radial-gradient(ellipse 60% 50% at 50% 45%, rgba(2, 80, 180, 0.4), transparent 70%),
+    radial-gradient(ellipse 35% 30% at 25% 20%, rgba(2, 124, 254, 0.2), transparent 70%),
+    #0A0C12;
 }
 
 .ci-fallback-orb {
@@ -67,7 +67,7 @@
   height: 46vmin;
   left: 8%;
   top: 14%;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.5), transparent 70%);
+  background: radial-gradient(circle, rgba(2, 124, 254, 0.45), transparent 70%);
   animation: ciOrbFloat 16s ease-in-out infinite alternate;
 }
 
@@ -76,7 +76,7 @@
   height: 40vmin;
   right: 6%;
   bottom: 10%;
-  background: radial-gradient(circle, rgba(22, 119, 255, 0.4), transparent 70%);
+  background: radial-gradient(circle, rgba(22, 136, 255, 0.35), transparent 70%);
   animation: ciOrbFloat 20s ease-in-out infinite alternate-reverse;
 }
 
@@ -85,7 +85,7 @@
   height: 26vmin;
   left: 58%;
   top: 55%;
-  background: radial-gradient(circle, rgba(142, 197, 255, 0.3), transparent 70%);
+  background: radial-gradient(circle, rgba(2, 124, 254, 0.2), transparent 70%);
   animation: ciOrbPulse 9s ease-in-out infinite alternate;
 }
 
@@ -164,7 +164,7 @@
 }
 
 .ci-skip span { transition: transform 0.25s ease; }
-.ci-skip:hover { border-color: rgba(142, 197, 255, 0.65); color: #B8DAFF; background: rgba(30, 64, 120, 0.35); }
+.ci-skip:hover { border-color: rgba(2, 124, 254, 0.5); color: #FFFFFF; background: rgba(2, 124, 254, 0.12); }
 .ci-skip:hover span { transform: translateX(3px); }
 
 @keyframes ciFadeIn {
@@ -192,7 +192,7 @@
   font-size: clamp(10px, 1.6vw, 13px);
   font-weight: 600;
   letter-spacing: 7px;
-  color: rgba(142, 197, 255, 0.45);
+  color: rgba(2, 124, 254, 0.5);
   text-transform: uppercase;
   opacity: 0;
   animation: ciFadeIn 1.4s ease 1.1s forwards;
@@ -240,8 +240,8 @@
   line-height: 1;
   color: #EAF2FC;
   text-shadow:
-    0 0 42px rgba(35, 136, 255, 0.4),
-    0 0 120px rgba(37, 99, 235, 0.22);
+    0 0 42px rgba(2, 124, 254, 0.35),
+    0 0 120px rgba(2, 124, 254, 0.15);
 }
 
 .ci-letter {
@@ -267,7 +267,7 @@
   font-weight: 500;
   letter-spacing: 6px;
   text-transform: uppercase;
-  color: rgba(169, 196, 228, 0.55);
+  color: rgba(166, 172, 184, 0.5);
 }
 
 /* ---- Developer credit ---- */
@@ -294,7 +294,7 @@
   width: 64px;
   height: 1px;
   margin: 0 auto 18px;
-  background: linear-gradient(90deg, transparent, rgba(142, 197, 255, 0.85), transparent);
+  background: linear-gradient(90deg, transparent, rgba(2, 124, 254, 0.6), transparent);
 }
 
 .ci-credit-label {
@@ -302,7 +302,7 @@
   font-size: clamp(9px, 1.3vw, 11px);
   font-weight: 600;
   letter-spacing: 9px;
-  color: rgba(169, 196, 228, 0.5);
+  color: rgba(166, 172, 184, 0.45);
   text-transform: uppercase;
 }
 
@@ -313,7 +313,7 @@
   font-weight: 600;
   letter-spacing: 5px;
   color: rgba(234, 242, 252, 0.92);
-  text-shadow: 0 0 28px rgba(35, 136, 255, 0.18);
+  text-shadow: 0 0 28px rgba(2, 124, 254, 0.12);
 }
 
 /* ---- Enter experience ---- */
@@ -339,8 +339,8 @@
   max-width: 440px;
   padding: 42px 44px 34px;
   border-radius: 22px;
-  border: 1px solid rgba(142, 197, 255, 0.18);
-  background: rgba(7, 20, 38, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(13, 15, 20, 0.75);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
   box-shadow:
@@ -365,7 +365,7 @@
 .ci-entry-subtitle {
   margin: 0 0 28px;
   font-size: 13px;
-  color: rgba(169, 196, 228, 0.6);
+  color: rgba(166, 172, 184, 0.55);
 }
 
 .ci-entry-actions {
@@ -390,25 +390,25 @@
 
 .ci-btn--primary {
   border: none;
-  background: linear-gradient(135deg, #1677FF, #2388FF);
+  background: #027CFE;
   color: #fff;
-  box-shadow: 0 8px 30px rgba(22, 119, 255, 0.35);
+  box-shadow: 0 8px 30px rgba(2, 124, 254, 0.25);
 }
 
 .ci-btn--primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 42px rgba(35, 136, 255, 0.5);
+  box-shadow: 0 12px 42px rgba(2, 124, 254, 0.35);
 }
 
 .ci-btn--secondary {
-  border: 1px solid rgba(142, 197, 255, 0.4);
-  background: rgba(35, 136, 255, 0.08);
-  color: #B8DAFF;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(2, 124, 254, 0.06);
+  color: #FFFFFF;
 }
 
 .ci-btn--secondary:hover {
-  background: rgba(35, 136, 255, 0.16);
-  border-color: rgba(142, 197, 255, 0.7);
+  background: rgba(2, 124, 254, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
 
@@ -429,7 +429,7 @@
   margin: 22px 0 0;
   font-size: 11px;
   letter-spacing: 0.4px;
-  color: rgba(169, 196, 228, 0.4);
+  color: rgba(166, 172, 184, 0.35);
 }
 
 /* ---- Mobile ---- */

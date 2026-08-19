@@ -1,10 +1,11 @@
 // src/components/SigmaMark.jsx
-// The single SIGMA-GPT brand mark — a hexagon AI core with a soft-blue gradient.
+// SIGMA-GPT — Geometric sigma mark with electric-blue accent
 import { useId } from "react";
 
 export default function SigmaMark({ size = 24, className = "" }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
-  const grad = `sigma-grad-${uid}`;
+  const grad = `sg-grad-${uid}`;
+  const glow = `sg-glow-${uid}`;
   return (
     <svg
       width={size}
@@ -15,19 +16,33 @@ export default function SigmaMark({ size = 24, className = "" }) {
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id={grad} x1="3" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#B8DAFF" />
-          <stop offset="1" stopColor="#1677FF" />
+        <linearGradient id={grad} x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#FFFFFF" stopOpacity="0.9" />
+          <stop offset="1" stopColor="#027CFE" />
         </linearGradient>
+        <filter id={glow} x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" />
+        </filter>
       </defs>
+      {/* Outer hexagon */}
       <path
-        d="M12 1.9 L21.1 6.95 V17.05 L12 22.1 L2.9 17.05 V6.95 Z"
+        d="M12 2 L20.66 7 V17 L12 22 L3.34 17 V7 Z"
         stroke={`url(#${grad})`}
-        strokeWidth="1.5"
+        strokeWidth="1.2"
         strokeLinejoin="round"
+        fill="none"
       />
-      <circle cx="12" cy="12" r="5.4" stroke="rgba(142, 197, 255, 0.35)" strokeWidth="0.8" />
-      <circle cx="12" cy="12" r="3" fill={`url(#${grad})`} />
+      {/* Inner sigma symbol */}
+      <path
+        d="M15 8.5 H9 L13 12 H9 L15 15.5"
+        stroke="#027CFE"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Subtle glow at center */}
+      <circle cx="12" cy="12" r="2" fill="#027CFE" opacity="0.25" filter={`url(#${glow})`} />
     </svg>
   );
 }

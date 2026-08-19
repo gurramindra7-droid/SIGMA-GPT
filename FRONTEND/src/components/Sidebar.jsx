@@ -90,37 +90,36 @@ export default function Sidebar({
     <aside className={"sidebar" + (mobileOpen ? " mobile-open" : "")}>
       {/* Branding */}
       <div className="sidebar-header">
-        <SigmaMark size={30} />
+        <SigmaMark size={26} />
         <div>
           <h2 className="sidebar-logo">
             <span className="sigma-accent">SIGMA</span>-GPT
           </h2>
-          <p className="sidebar-tagline">Intelligent AI Workspace</p>
+          <p className="sidebar-tagline">Intelligence System / 2026</p>
         </div>
       </div>
 
       {/* New Chat */}
       <div className="sidebar-new-chat-wrapper">
         <button className="sidebar-new-chat-btn" onClick={onNewChat}>
-          <span className="sidebar-new-chat-icon"><FiPlus size={13} /></span>
-          New Chat
+          <span className="sidebar-new-chat-icon"><FiPlus size={12} /></span>
+          New Conversation
         </button>
       </div>
 
       {/* Search */}
       <div className="sidebar-search">
         <FiSearch className="sidebar-search-icon" size={13} />
-        <input type="text" name="sidebar-search" className="sidebar-search-input" placeholder="Search conversations..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} aria-label="Search conversations" />
+        <input type="text" name="sidebar-search" className="sidebar-search-input" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} aria-label="Search conversations" />
       </div>
 
-      {/* Recent */}
-      <p className="sidebar-section-label">Recent</p>
+      {/* Conversations */}
+      <p className="sidebar-section-label">Conversations</p>
 
-      {/* Conversation history */}
       <div className="sidebar-chat-list">
         {groupedChats.length === 0 ? (
           <p className="sidebar-empty-text">
-            {searchQuery ? "No conversations found" : "No conversations yet"}
+            {searchQuery ? "No results" : "No conversations yet"}
           </p>
         ) : (
           groupedChats.map((group) => (
@@ -139,10 +138,10 @@ export default function Sidebar({
                   </span>
                   <div className="sidebar-chat-item-actions">
                     <button className={"sidebar-chat-action-btn" + (pinnedIds.includes(chat.id) ? " pinned" : "")} onClick={(e) => togglePin(chat.id, e)} title={pinnedIds.includes(chat.id) ? "Unpin" : "Pin"}>
-                      <FiStar size={11} />
+                      <FiStar size={10} />
                     </button>
-                    <button className="sidebar-chat-action-btn danger" onClick={(e) => { e.stopPropagation(); onDeleteChat(chat.id); }} title="Delete conversation">
-                      <FiTrash2 size={11} />
+                    <button className="sidebar-chat-action-btn danger" onClick={(e) => { e.stopPropagation(); onDeleteChat(chat.id); }} title="Delete">
+                      <FiTrash2 size={10} />
                     </button>
                   </div>
                 </div>
@@ -152,13 +151,13 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* Footer: Profile / About / user */}
+      {/* Footer */}
       <div className="sidebar-footer">
         <button type="button" className="sidebar-menu-btn" onClick={onOpenProfile}>
-          <FiUser size={15} /> Profile
+          <FiUser size={14} /> Profile
         </button>
         <button type="button" className="sidebar-menu-btn" onClick={onOpenAbout}>
-          <FiInfo size={15} /> About SIGMA-GPT
+          <FiInfo size={14} /> About
         </button>
         <div
           className="sidebar-user-row"
@@ -170,9 +169,9 @@ export default function Sidebar({
         >
           <div className="sidebar-user-avatar">{initials}</div>
           <span className="sidebar-user-name">{username || "Guest"}</span>
-          {isGuest && <span className="sidebar-guest-badge" title="Guest accounts have text-only access">GUEST</span>}
+          {isGuest && <span className="sidebar-guest-badge">GUEST</span>}
           <button className="sidebar-logout-btn" onClick={(e) => { e.stopPropagation(); onLogout(); }} title="Logout" aria-label="Logout">
-            <FiLogOut size={15} />
+            <FiLogOut size={14} />
           </button>
         </div>
       </div>
