@@ -88,7 +88,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const generateChatTitle = async (message) => {
   try {
     const res = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "user",
@@ -397,7 +397,7 @@ app.post("/api/chat", authOrGuest, async (req, res) => {
 
     const completion = await groq.chat.completions.create({
       messages: conversationHistory,
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       stream: true,
     });
 
@@ -447,8 +447,12 @@ app.post("/api/chat", authOrGuest, async (req, res) => {
     res.write(`\n__CHAT_ID__:${savedChatId}`);
     res.end();
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Chat failed" });
+    console.error("❌ CHAT ERROR:", error.message);
+    if (error.status) console.error("❌ STATUS:", error.status);
+    if (error.error) console.error("❌ GROQ DETAIL:", JSON.stringify(error.error));
+    res.status(error.status || 500).json({
+      error: error.message || "Chat failed",
+    });
   }
 });
 
